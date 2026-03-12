@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>新增记账 - EasyLedger</title>
+</head>
+<body>
+<h1>新增记账</h1>
+
+<p><a th:href="@{/transactions}">查看流水列表</a></p>
+
+<p th:if="${error}" th:text="${error}" style="color:red"></p>
+
+<form th:action="@{/transactions}" method="post" th:object="${transaction}">
+    <div>
+        <label>类型：</label>
+        <select th:field="*{type}">
+            <option value="INCOME">收入</option>
+            <option value="EXPENSE">支出</option>
+        </select>
+    </div>
+    <div>
+        <label>金额：</label>
+        <input type="number" th:field="*{amount}" min="0.01" step="0.01" required>
+    </div>
+    <div>
+        <label>分类：</label>
+        <select th:field="*{categoryId}" required>
+            <option value="">请选择</option>
+            <option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name + '（' + c.type + '）'}"></option>
+        </select>
+    </div>
+    <div>
+        <label>日期：</label>
+        <input type="date" th:field="*{txnDate}" required>
+    </div>
+    <div>
+        <label>备注：</label>
+        <input type="text" th:field="*{note}" maxlength="255">
+    </div>
+    <div style="margin-top: 12px;">
+        <button type="submit">保存</button>
+    </div>
+</form>
+</body>
+</html>
+

@@ -5,6 +5,7 @@ import com.bbww.easyledger.entity.Category;
 import com.bbww.easyledger.entity.LedgerTransaction;
 import com.bbww.easyledger.mapper.CategoryMapper;
 import com.bbww.easyledger.service.TransactionService;
+import com.bbww.easyledger.service.dto.StatsSummaryResponse;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -56,12 +58,19 @@ public class TransactionController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             Model model) {
-        model.addAttribute("transactions", transactionService.findByFilter(type, startDate, endDate));
-        model.addAttribute("categoryNameMap", buildCategoryNameMap());
         model.addAttribute("type", type);
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
-        return "transaction-list";
+        return "dashboard";
+    }
+
+    @GetMapping("/stats/summary")
+    @ResponseBody
+    public StatsSummaryResponse statsSummary(
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        return transactionService.buildSummary(type, startDate, endDate);
     }
 
     private LedgerTransaction defaultTransaction() {
@@ -90,4 +99,3 @@ public class TransactionController {
                 && !transaction.getType().isBlank();
     }
 }
-

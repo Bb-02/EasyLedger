@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>EasyLedger Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <style>
+        :root {
+            --bg: #f5f7fb;
+            --card: #ffffff;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --primary: #3b82f6;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --border: #e5e7eb;
+            --shadow: 0 6px 20px rgba(17, 24, 39, 0.08);
+            --radius: 12px;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            color: var(--text);
+            background: var(--bg);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 24px auto;
+            padding: 0 16px 24px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            gap: 12px;
+        }
+        .title {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .subtitle {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 13px;
+        }
+        .actions a {
+            text-decoration: none;
+            background: var(--primary);
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 14px;
+            display: inline-block;
+        }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+        .filters {
+            padding: 14px;
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .filters label {
+            display: block;
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+        .filters select,
+        .filters input {
+            width: 100%;
+            padding: 9px 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #fff;
+        }
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            align-items: end;
+        }
+        .btn {
+            border: none;
+            padding: 10px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+            display: inline-block;
+        }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-light { background: #eef2ff; color: #1d4ed8; }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .stat {
+            padding: 14px;
+        }
+        .stat .k { color: var(--muted); font-size: 13px; }
+        .stat .v { margin-top: 6px; font-size: 26px; font-weight: 700; }
+        .income { color: var(--success); }
+        .expense { color: var(--danger); }
+
+        .charts {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .chart-box { padding: 12px; }
+        .chart-title { margin: 0 0 8px; font-size: 15px; }
+        .chart { width: 100%; height: 340px; }
+
+        .table-wrap {
+            padding: 12px;
+            overflow: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+        }
+        th, td {
+            border-bottom: 1px solid var(--border);
+            padding: 10px 8px;
+            text-align: left;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        th { background: #f8fafc; }
+
+        @media (max-width: 960px) {
+            .filters { grid-template-columns: 1fr 1fr; }
+            .stats { grid-template-columns: 1fr; }
+            .charts { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div>
+            <h1 class="title">EasyLedger</h1>
+            <p class="subtitle">Dashboard v1 - 2026-03-12</p>
+        </div>
+        <div class="actions">
+            <a th:href="@{/transactions/new}">+ 新增记账</a>
+        </div>
+    </div>
+
+    <form class="card filters" th:action="@{/transactions/dashboard}" method="get">
+        <div>
+            <label>类型</label>
+            <select name="type">
+                <option value="" th:selected="${type == null or type == ''}">全部</option>
+                <option value="INCOME" th:selected="${type == 'INCOME'}">收入</option>
+                <option value="EXPENSE" th:selected="${type == 'EXPENSE'}">支出</option>
+            </select>
+        </div>
+        <div>
+            <label>开始日期</label>
+            <input type="date" name="startDate" th:value="${startDate}">
+        </div>
+        <div>
+            <label>结束日期</label>
+            <input type="date" name="endDate" th:value="${endDate}">
+        </div>
+        <div class="btn-row">
+            <button class="btn btn-primary" type="submit">筛选</button>
+            <a class="btn btn-light" th:href="@{/transactions/dashboard}">重置</a>
+        </div>
+        <div class="btn-row">
+            <a class="btn btn-light" th:href="@{/transactions}">查看原列表页</a>
+        </div>
+    </form>
+
+    <div class="stats">
+        <div class="card stat">
+            <div class="k">总收入</div>
+            <div id="totalIncome" class="v income">0</div>
+        </div>
+        <div class="card stat">
+            <div class="k">总支出</div>
+            <div id="totalExpense" class="v expense">0</div>
+        </div>
+        <div class="card stat">
+            <div class="k">净额</div>
+            <div id="netAmount" class="v">0</div>
+        </div>
+    </div>
+
+    <div class="charts">
+        <div class="card chart-box">
+            <h3 class="chart-title">按天金额趋势</h3>
+            <div id="dailyBarChart" class="chart"></div>
+        </div>
+        <div class="card chart-box">
+            <h3 class="chart-title">分类占比</h3>
+            <div id="categoryPieChart" class="chart"></div>
+        </div>
+    </div>
+
+    <div class="card table-wrap">
+        <table>
+            <thead>
+            <tr>
+                <th>状态</th>
+                <th>说明</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td id="statusCell">加载中</td>
+                <td id="statusMsg">正在获取统计数据...</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    (function () {
+        const summaryBaseUrl = /*[[@{/transactions/stats/summary}]]*/ "/transactions/stats/summary";
+        const params = new URLSearchParams(window.location.search);
+        const query = new URLSearchParams();
+        ["type", "startDate", "endDate"].forEach(function (k) {
+            const v = params.get(k);
+            if (v) query.set(k, v);
+        });
+        const url = query.toString() ? summaryBaseUrl + "?" + query.toString() : summaryBaseUrl;
+
+        function setStatus(status, msg) {
+            document.getElementById("statusCell").textContent = status;
+            document.getElementById("statusMsg").textContent = msg;
+        }
+
+        function fmt(v) {
+            return Number(v || 0).toLocaleString("zh-CN", { maximumFractionDigits: 2 });
+        }
+
+        function render(payload) {
+            const income = Number(payload.totalIncome || 0);
+            const expense = Number(payload.totalExpense || 0);
+            const net = income - expense;
+
+            document.getElementById("totalIncome").textContent = fmt(income);
+            document.getElementById("totalExpense").textContent = fmt(expense);
+            document.getElementById("netAmount").textContent = fmt(net);
+
+            const daily = (payload.dailyTotals || []).slice().reverse();
+            const x = daily.map(function (i) { return i.day; });
+            const y = daily.map(function (i) { return i.amount; });
+
+            const pie = (payload.categoryTotals || []).map(function (i) {
+                return { name: i.categoryName || "未分类", value: i.amount || 0 };
+            });
+
+            const barChart = echarts.init(document.getElementById("dailyBarChart"));
+            barChart.setOption({
+                tooltip: { trigger: "axis" },
+                grid: { left: 30, right: 16, bottom: 24, top: 20, containLabel: true },
+                xAxis: { type: "category", data: x },
+                yAxis: { type: "value" },
+                series: [{ type: "bar", data: y, barMaxWidth: 28 }]
+            });
+
+            const pieChart = echarts.init(document.getElementById("categoryPieChart"));
+            pieChart.setOption({
+                tooltip: { trigger: "item" },
+                legend: { bottom: 0 },
+                series: [{
+                    type: "pie",
+                    radius: ["35%", "65%"],
+                    avoidLabelOverlap: true,
+                    data: pie
+                }]
+            });
+
+            let resizeTimer = null;
+            window.addEventListener("resize", function () {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(function () {
+                    barChart.resize();
+                    pieChart.resize();
+                }, 120);
+            });
+
+            setStatus("成功", "统计数据已加载，图表渲染完成。");
+        }
+
+        if (!window.echarts) {
+            setStatus("失败", "ECharts CDN 加载失败，请检查网络连接。");
+            return;
+        }
+
+        fetch(url)
+            .then(function (resp) {
+                if (!resp.ok) throw new Error("HTTP " + resp.status);
+                return resp.json();
+            })
+            .then(render)
+            .catch(function (err) {
+                setStatus("失败", "统计接口调用失败: " + err.message);
+            });
+    })();
+</script>
+</body>
+</html>
+

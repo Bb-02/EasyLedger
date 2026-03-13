@@ -2,46 +2,204 @@
 <html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>新增记账 - EasyLedger</title>
+    <style>
+        :root {
+            --bg: #f5f7fb;
+            --card: #ffffff;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --primary: #3b82f6;
+            --border: #e5e7eb;
+            --shadow: 0 6px 20px rgba(17, 24, 39, 0.08);
+            --radius: 12px;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            color: var(--text);
+            background: var(--bg);
+        }
+        .container {
+            max-width: 760px;
+            margin: 28px auto;
+            padding: 0 16px 24px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .title {
+            margin: 0;
+            font-size: 26px;
+            font-weight: 700;
+        }
+        .subtitle {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 13px;
+        }
+        .actions a {
+            text-decoration: none;
+            background: #eef2ff;
+            color: #1d4ed8;
+            padding: 9px 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            display: inline-block;
+        }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 18px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .field label {
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .field input,
+        .field select {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 14px;
+            background: #fff;
+        }
+        .field.full { grid-column: 1 / -1; }
+        .error {
+            background: #fef2f2;
+            color: #b91c1c;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border: 1px solid #fecaca;
+            font-size: 13px;
+        }
+        .hint {
+            color: var(--muted);
+            font-size: 12px;
+        }
+        .actions-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 16px;
+        }
+        .btn {
+            border: none;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-light { background: #eef2ff; color: #1d4ed8; }
+
+        @media (max-width: 720px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
 <body>
-<h1>新增记账</h1>
+<div class="container">
+    <div class="header">
+        <div>
+            <h1 class="title">新增记账</h1>
+            <div class="subtitle">快速记录一笔收入或支出</div>
+        </div>
+        <div class="actions">
+            <a th:href="@{/transactions}">返回仪表盘</a>
+        </div>
+    </div>
 
-<p><a th:href="@{/transactions}">查看流水列表</a></p>
+    <div class="card">
+        <p class="error" th:if="${error}" th:text="${error}"></p>
 
-<p th:if="${error}" th:text="${error}" style="color:red"></p>
+        <form th:action="@{/transactions}" method="post" th:object="${transaction}" id="txnForm">
+            <div class="grid">
+                <div class="field">
+                    <label>类型</label>
+                    <select th:field="*{type}" id="typeSelect">
+                        <option value="INCOME">收入</option>
+                        <option value="EXPENSE">支出</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>金额</label>
+                    <input type="number" th:field="*{amount}" min="0.01" step="0.01" placeholder="例如 28.50" required>
+                    <div class="hint">支持两位小数，金额必须大于 0</div>
+                </div>
+                <div class="field">
+                    <label>分类</label>
+                    <select th:field="*{categoryId}" required id="categorySelect">
+                        <option value="">请选择</option>
+                        <option th:each="c : ${categories}"
+                                th:value="${c.id}"
+                                th:text="${c.name + '（' + c.type + '）'}"
+                                th:attr="data-type=${c.type}"></option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>日期</label>
+                    <input type="date" th:field="*{txnDate}" required>
+                </div>
+                <div class="field full">
+                    <label>备注</label>
+                    <input type="text" th:field="*{note}" maxlength="255" placeholder="可选，例如：午餐/打车">
+                </div>
+            </div>
+            <div class="actions-row">
+                <button type="submit" class="btn btn-primary">保存</button>
+                <button type="reset" class="btn btn-light">清空</button>
+            </div>
+        </form>
+    </div>
+</div>
 
-<form th:action="@{/transactions}" method="post" th:object="${transaction}">
-    <div>
-        <label>类型：</label>
-        <select th:field="*{type}">
-            <option value="INCOME">收入</option>
-            <option value="EXPENSE">支出</option>
-        </select>
-    </div>
-    <div>
-        <label>金额：</label>
-        <input type="number" th:field="*{amount}" min="0.01" step="0.01" required>
-    </div>
-    <div>
-        <label>分类：</label>
-        <select th:field="*{categoryId}" required>
-            <option value="">请选择</option>
-            <option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name + '（' + c.type + '）'}"></option>
-        </select>
-    </div>
-    <div>
-        <label>日期：</label>
-        <input type="date" th:field="*{txnDate}" required>
-    </div>
-    <div>
-        <label>备注：</label>
-        <input type="text" th:field="*{note}" maxlength="255">
-    </div>
-    <div style="margin-top: 12px;">
-        <button type="submit">保存</button>
-    </div>
-</form>
+<script>
+    (function () {
+        var typeSelect = document.getElementById("typeSelect");
+        var categorySelect = document.getElementById("categorySelect");
+        if (!typeSelect || !categorySelect) return;
+
+        function filterCategories() {
+            var type = typeSelect.value;
+            var options = categorySelect.querySelectorAll("option[data-type]");
+            var hasSelected = false;
+            options.forEach(function (opt) {
+                var show = opt.getAttribute("data-type") === type;
+                opt.style.display = show ? "" : "none";
+                if (opt.selected && show) {
+                    hasSelected = true;
+                }
+            });
+            if (!hasSelected) {
+                categorySelect.value = "";
+            }
+        }
+
+        typeSelect.addEventListener("change", filterCategories);
+        filterCategories();
+    })();
+</script>
 </body>
 </html>
-

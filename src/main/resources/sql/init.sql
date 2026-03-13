@@ -13,13 +13,13 @@ CREATE TABLE IF NOT EXISTS ledger_transaction (
   type VARCHAR(20) NOT NULL,
   amount DECIMAL(12,2) NOT NULL,
   category_id BIGINT NOT NULL,
-  txn_date DATE NOT NULL,
+  transaction_date DATE NOT NULL,
   note VARCHAR(255),
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_txn_date (txn_date),
+  INDEX idx_txn_date (transaction_date),
   INDEX idx_category_id (category_id),
-  INDEX idx_type_txn_date (type, txn_date)
+  INDEX idx_type_txn_date (type, transaction_date)
 );
 
 INSERT INTO ledger_category (name, type, sort, enabled)
@@ -41,4 +41,3 @@ WHERE NOT EXISTS (SELECT 1 FROM ledger_category WHERE name = '交通' AND type =
 INSERT INTO ledger_category (name, type, sort, enabled)
 SELECT '购物', 'EXPENSE', 3, 1 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM ledger_category WHERE name = '购物' AND type = 'EXPENSE');
-

@@ -41,8 +41,9 @@ public class TransactionController {
     }
 
     @PostMapping
-    public String create(@ModelAttribute LedgerTransaction transaction, Model model) {
+    public String create(@ModelAttribute("transaction") LedgerTransaction transaction, Model model) {
         if (!isValid(transaction)) {
+            model.addAttribute("transaction", transaction);
             model.addAttribute("error", "请填写完整信息，且金额必须大于0");
             model.addAttribute("categories", loadCategories());
             return "transaction-form";

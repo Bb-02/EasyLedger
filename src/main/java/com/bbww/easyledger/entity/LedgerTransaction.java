@@ -1,6 +1,7 @@
 package com.bbww.easyledger.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
@@ -15,6 +16,7 @@ public class LedgerTransaction {
     private String type;
     private BigDecimal amount;
     private Long categoryId;
+    @TableField("transaction_date")
     private LocalDate txnDate;
     private String note;
 
@@ -66,4 +68,3 @@ public class LedgerTransaction {
         this.note = note;
     }
 }
-

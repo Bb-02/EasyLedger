@@ -30,6 +30,29 @@ public class TransactionService {
         transactionMapper.insert(transaction);
     }
 
+    public LedgerTransaction findById(Long id) {
+        return id == null ? null : transactionMapper.selectById(id);
+    }
+
+    public boolean updateById(Long id, LedgerTransaction transaction) {
+        if (id == null || transaction == null || transactionMapper.selectById(id) == null) {
+            return false;
+        }
+        transaction.setId(id);
+        return transactionMapper.updateById(transaction) > 0;
+    }
+
+    public boolean deleteById(Long id) {
+        return id != null && transactionMapper.deleteById(id) > 0;
+    }
+
+    public List<LedgerTransaction> findRecent(int limit) {
+        int safeLimit = Math.max(1, limit);
+        LambdaQueryWrapper<LedgerTransaction> query = new LambdaQueryWrapper<>();
+        query.orderByDesc(LedgerTransaction::getTxnDate).orderByDesc(LedgerTransaction::getId).last("LIMIT " + safeLimit);
+        return transactionMapper.selectList(query);
+    }
+
     public List<LedgerTransaction> findAll() {
         LambdaQueryWrapper<LedgerTransaction> query = new LambdaQueryWrapper<>();
         query.orderByDesc(LedgerTransaction::getTxnDate).orderByDesc(LedgerTransaction::getId);
@@ -54,6 +77,10 @@ public class TransactionService {
         BigDecimal totalExpense = BigDecimal.ZERO;
         Map<String, BigDecimal> categoryTotals = new LinkedHashMap<>();
         Map<String, BigDecimal> dailyTotals = new LinkedHashMap<>();
+        Map<String, BigDecimal> categoryTotalsIncome = new LinkedHashMap<>();
+        Map<String, BigDecimal> categoryTotalsExpense = new LinkedHashMap<>();
+        Map<String, BigDecimal> dailyIncomeTotals = new LinkedHashMap<>();
+        Map<String, BigDecimal> dailyExpenseTotals = new LinkedHashMap<>();
 
         for (LedgerTransaction transaction : transactions) {
             BigDecimal amount = safeAmount(transaction.getAmount());
@@ -70,6 +97,14 @@ public class TransactionService {
 
             String day = transaction.getTxnDate() == null ? "未知日期" : transaction.getTxnDate().toString();
             dailyTotals.put(day, dailyTotals.getOrDefault(day, BigDecimal.ZERO).add(signedAmount));
+
+            if ("INCOME".equals(transaction.getType())) {
+                categoryTotalsIncome.put(categoryName, categoryTotalsIncome.getOrDefault(categoryName, BigDecimal.ZERO).add(amount));
+                dailyIncomeTotals.put(day, dailyIncomeTotals.getOrDefault(day, BigDecimal.ZERO).add(amount));
+            } else if ("EXPENSE".equals(transaction.getType())) {
+                categoryTotalsExpense.put(categoryName, categoryTotalsExpense.getOrDefault(categoryName, BigDecimal.ZERO).add(amount));
+                dailyExpenseTotals.put(day, dailyExpenseTotals.getOrDefault(day, BigDecimal.ZERO).add(amount));
+            }
         }
 
         StatsSummaryResponse response = new StatsSummaryResponse();
@@ -77,6 +112,10 @@ public class TransactionService {
         response.setTotalExpense(totalExpense);
         response.setCategoryTotals(toCategoryItems(categoryTotals));
         response.setDailyTotals(toDailyItems(dailyTotals));
+        response.setCategoryTotalsIncome(toCategoryItems(categoryTotalsIncome));
+        response.setCategoryTotalsExpense(toCategoryItems(categoryTotalsExpense));
+        response.setDailyIncomeTotals(toDailyItems(dailyIncomeTotals));
+        response.setDailyExpenseTotals(toDailyItems(dailyExpenseTotals));
         return response;
     }
 

@@ -9,6 +9,10 @@ public class StatsSummaryResponse {
     private BigDecimal totalExpense;
     private List<CategoryAmountItem> categoryTotals;
     private List<DailyAmountItem> dailyTotals;
+    private List<CategoryAmountItem> categoryTotalsIncome;
+    private List<CategoryAmountItem> categoryTotalsExpense;
+    private List<DailyAmountItem> dailyIncomeTotals;
+    private List<DailyAmountItem> dailyExpenseTotals;
 
     public BigDecimal getTotalIncome() {
         return totalIncome;
@@ -40,6 +44,38 @@ public class StatsSummaryResponse {
 
     public void setDailyTotals(List<DailyAmountItem> dailyTotals) {
         this.dailyTotals = dailyTotals;
+    }
+
+    public List<CategoryAmountItem> getCategoryTotalsIncome() {
+        return categoryTotalsIncome;
+    }
+
+    public void setCategoryTotalsIncome(List<CategoryAmountItem> categoryTotalsIncome) {
+        this.categoryTotalsIncome = categoryTotalsIncome;
+    }
+
+    public List<CategoryAmountItem> getCategoryTotalsExpense() {
+        return categoryTotalsExpense;
+    }
+
+    public void setCategoryTotalsExpense(List<CategoryAmountItem> categoryTotalsExpense) {
+        this.categoryTotalsExpense = categoryTotalsExpense;
+    }
+
+    public List<DailyAmountItem> getDailyIncomeTotals() {
+        return dailyIncomeTotals;
+    }
+
+    public void setDailyIncomeTotals(List<DailyAmountItem> dailyIncomeTotals) {
+        this.dailyIncomeTotals = dailyIncomeTotals;
+    }
+
+    public List<DailyAmountItem> getDailyExpenseTotals() {
+        return dailyExpenseTotals;
+    }
+
+    public void setDailyExpenseTotals(List<DailyAmountItem> dailyExpenseTotals) {
+        this.dailyExpenseTotals = dailyExpenseTotals;
     }
 
     public static class CategoryAmountItem {
@@ -84,4 +120,3 @@ public class StatsSummaryResponse {
         }
     }
 }
-

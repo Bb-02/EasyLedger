@@ -123,6 +123,34 @@
         .chart-box { padding: 12px; }
         .chart-title { margin: 0 0 8px; font-size: 15px; }
         .chart { width: 100%; height: 340px; }
+        .chart-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        .toggle-group {
+            display: flex;
+            gap: 6px;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 999px;
+        }
+        .toggle-btn {
+            border: none;
+            background: transparent;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            color: var(--muted);
+            cursor: pointer;
+        }
+        .toggle-btn.active {
+            background: #fff;
+            color: var(--text);
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+        }
 
         .table-wrap {
             padding: 12px;
@@ -161,7 +189,7 @@
         </div>
     </div>
 
-    <form class="card filters" th:action="@{/transactions/dashboard}" method="get">
+    <form class="card filters" th:action="@{/transactions}" method="get">
         <div>
             <label>类型</label>
             <select name="type">
@@ -180,10 +208,10 @@
         </div>
         <div class="btn-row">
             <button class="btn btn-primary" type="submit">筛选</button>
-            <a class="btn btn-light" th:href="@{/transactions/dashboard}">重置</a>
+            <a class="btn btn-light" th:href="@{/transactions}">重置</a>
         </div>
         <div class="btn-row">
-            <a class="btn btn-light" th:href="@{/transactions}">查看原列表页</a>
+            <a class="btn btn-light" th:href="@{/transactions/new}">去新增一笔</a>
         </div>
     </form>
 
@@ -204,11 +232,19 @@
 
     <div class="charts">
         <div class="card chart-box">
-            <h3 class="chart-title">按天金额趋势</h3>
+            <div class="chart-header">
+                <h3 class="chart-title">按天金额趋势</h3>
+            </div>
             <div id="dailyBarChart" class="chart"></div>
         </div>
         <div class="card chart-box">
-            <h3 class="chart-title">分类占比</h3>
+            <div class="chart-header">
+                <h3 class="chart-title">分类占比</h3>
+                <div class="toggle-group" id="pieToggle">
+                    <button type="button" class="toggle-btn active" data-type="EXPENSE">支出</button>
+                    <button type="button" class="toggle-btn" data-type="INCOME">收入</button>
+                </div>
+            </div>
             <div id="categoryPieChart" class="chart"></div>
         </div>
     </div>
@@ -225,6 +261,40 @@
             <tr>
                 <td id="statusCell">加载中</td>
                 <td id="statusMsg">正在获取统计数据...</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card table-wrap" style="margin-top: 16px;">
+        <h3 class="chart-title">最近流水</h3>
+        <table>
+            <thead>
+            <tr>
+                <th>日期</th>
+                <th>类型</th>
+                <th>分类</th>
+                <th>金额</th>
+                <th>备注</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:if="${recentTransactions == null or #lists.isEmpty(recentTransactions)}">
+                <td colspan="6">暂无流水，先新增一笔吧。</td>
+            </tr>
+            <tr th:each="t : ${recentTransactions}">
+                <td th:text="${t.txnDate}">2026-03-13</td>
+                <td th:text="${t.type == 'INCOME' ? '收入' : '支出'}">支出</td>
+                <td th:text="${categoryNameMap[t.categoryId] ?: '未分类'}">餐饮</td>
+                <td th:text="${t.amount}">0.00</td>
+                <td th:text="${t.note}">-</td>
+                <td>
+                    <a th:href="@{'/transactions/' + ${t.id} + '/edit'}">编辑</a>
+                    <form th:action="@{'/transactions/' + ${t.id} + '/delete'}" method="post" style="display:inline; margin-left: 8px;">
+                        <button type="submit" onclick="return confirm('确认删除这条记录吗？');">删除</button>
+                    </form>
+                </td>
             </tr>
             </tbody>
         </table>
@@ -260,34 +330,93 @@
             document.getElementById("totalExpense").textContent = fmt(expense);
             document.getElementById("netAmount").textContent = fmt(net);
 
-            const daily = (payload.dailyTotals || []).slice().reverse();
-            const x = daily.map(function (i) { return i.day; });
-            const y = daily.map(function (i) { return i.amount; });
-
-            const pie = (payload.categoryTotals || []).map(function (i) {
-                return { name: i.categoryName || "未分类", value: i.amount || 0 };
+            const dailyIncome = payload.dailyIncomeTotals || [];
+            const dailyExpense = payload.dailyExpenseTotals || [];
+            const dayMap = {};
+            dailyIncome.forEach(function (item) {
+                const day = item.day || "未知日期";
+                if (!dayMap[day]) dayMap[day] = { income: 0, expense: 0 };
+                dayMap[day].income = Number(item.amount || 0);
             });
+            dailyExpense.forEach(function (item) {
+                const day = item.day || "未知日期";
+                if (!dayMap[day]) dayMap[day] = { income: 0, expense: 0 };
+                dayMap[day].expense = Number(item.amount || 0);
+            });
+            const days = Object.keys(dayMap).sort();
+            const incomeSeries = days.map(function (day) { return dayMap[day].income || 0; });
+            const expenseSeries = days.map(function (day) { return dayMap[day].expense || 0; });
+
+            const categoryIncome = payload.categoryTotalsIncome || [];
+            const categoryExpense = payload.categoryTotalsExpense || [];
 
             const barChart = echarts.init(document.getElementById("dailyBarChart"));
             barChart.setOption({
                 tooltip: { trigger: "axis" },
-                grid: { left: 30, right: 16, bottom: 24, top: 20, containLabel: true },
-                xAxis: { type: "category", data: x },
+                legend: { data: ["收入", "支出"] },
+                grid: { left: 30, right: 16, bottom: 24, top: 32, containLabel: true },
+                xAxis: { type: "category", data: days },
                 yAxis: { type: "value" },
-                series: [{ type: "bar", data: y, barMaxWidth: 28 }]
+                series: [
+                    {
+                        name: "收入",
+                        type: "bar",
+                        data: incomeSeries,
+                        barMaxWidth: 24,
+                        itemStyle: { color: "#16a34a" }
+                    },
+                    {
+                        name: "支出",
+                        type: "bar",
+                        data: expenseSeries,
+                        barMaxWidth: 24,
+                        itemStyle: { color: "#dc2626" }
+                    }
+                ]
             });
 
             const pieChart = echarts.init(document.getElementById("categoryPieChart"));
-            pieChart.setOption({
-                tooltip: { trigger: "item" },
-                legend: { bottom: 0 },
-                series: [{
-                    type: "pie",
-                    radius: ["35%", "65%"],
-                    avoidLabelOverlap: true,
-                    data: pie
-                }]
-            });
+            const pieToggle = document.getElementById("pieToggle");
+            const initialType = params.get("type") === "INCOME" ? "INCOME" : "EXPENSE";
+
+            function buildPieData(type) {
+                const source = type === "INCOME" ? categoryIncome : categoryExpense;
+                return source.map(function (i) {
+                    return { name: i.categoryName || "未分类", value: i.amount || 0 };
+                });
+            }
+
+            function renderPie(type) {
+                const data = buildPieData(type);
+                pieChart.setOption({
+                    tooltip: { trigger: "item" },
+                    legend: { bottom: 0 },
+                    series: [{
+                        type: "pie",
+                        radius: ["35%", "65%"],
+                        avoidLabelOverlap: true,
+                        data: data
+                    }]
+                });
+            }
+
+            if (pieToggle) {
+                const buttons = pieToggle.querySelectorAll(".toggle-btn");
+                buttons.forEach(function (btn) {
+                    const isActive = btn.getAttribute("data-type") === initialType;
+                    btn.classList.toggle("active", isActive);
+                });
+                pieToggle.addEventListener("click", function (event) {
+                    const target = event.target;
+                    if (!target || !target.classList.contains("toggle-btn")) return;
+                    buttons.forEach(function (btn) {
+                        btn.classList.toggle("active", btn === target);
+                    });
+                    renderPie(target.getAttribute("data-type"));
+                });
+            }
+
+            renderPie(initialType);
 
             let resizeTimer = null;
             window.addEventListener("resize", function () {

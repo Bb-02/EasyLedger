@@ -62,6 +62,8 @@ public class TransactionController {
         model.addAttribute("type", type);
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
+        model.addAttribute("recentTransactions", transactionService.findRecent(8));
+        model.addAttribute("categoryNameMap", buildCategoryNameMap());
         return "dashboard";
     }
 

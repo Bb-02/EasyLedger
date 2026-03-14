@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>记账统计 - EasyLedger</title>
+    <style>
+        :root {
+            --bg: #f5f7fb;
+            --card: #ffffff;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --primary: #3b82f6;
+            --danger: #dc2626;
+            --border: #e5e7eb;
+            --shadow: 0 6px 20px rgba(17, 24, 39, 0.08);
+            --radius: 12px;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            color: var(--text);
+            background: var(--bg);
+        }
+        .container {
+            max-width: 1100px;
+            margin: 24px auto;
+            padding: 0 16px 24px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .title {
+            margin: 0;
+            font-size: 26px;
+            font-weight: 700;
+        }
+        .subtitle {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 13px;
+        }
+        .actions a {
+            text-decoration: none;
+            background: #eef2ff;
+            color: #1d4ed8;
+            padding: 9px 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            display: inline-block;
+        }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 12px;
+            margin-bottom: 14px;
+        }
+        .date-title {
+            margin: 0 0 10px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+        }
+        th, td {
+            border-bottom: 1px solid var(--border);
+            padding: 10px 8px;
+            text-align: left;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        th { background: #f8fafc; }
+        .expense { color: var(--danger); }
+        .empty {
+            padding: 24px 12px;
+            text-align: center;
+            color: var(--muted);
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div>
+            <h1 class="title">记账统计</h1>
+            <div class="subtitle">按日期查看全部流水记录</div>
+        </div>
+        <div class="actions">
+            <a th:href="@{/transactions}">返回仪表盘</a>
+        </div>
+    </div>
+
+    <div class="card" th:if="${groupedTransactions == null or #maps.isEmpty(groupedTransactions)}">
+        <div class="empty">暂无流水记录，先新增一笔吧。</div>
+    </div>
+
+    <div class="card" th:each="entry : ${groupedTransactions}">
+        <h3 class="date-title" th:text="${entry.key}">2026-03-13</h3>
+        <table>
+            <thead>
+            <tr>
+                <th>类型</th>
+                <th>分类</th>
+                <th>金额</th>
+                <th>备注</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="t : ${entry.value}">
+                <td th:text="${t.type == 'INCOME' ? '收入' : '支出'}">支出</td>
+                <td th:text="${categoryNameMap[t.categoryId] ?: '未分类'}">餐饮</td>
+                <td th:text="${t.amount}" th:classappend="${t.type == 'EXPENSE' ? 'expense' : ''}">0.00</td>
+                <td th:text="${t.note}">-</td>
+                <td>
+                    <a th:href="@{'/transactions/' + ${t.id} + '/edit'}">编辑</a>
+                    <form th:action="@{'/transactions/' + ${t.id} + '/delete'}" method="post" style="display:inline; margin-left: 8px;">
+                        <button type="submit" onclick="return confirm('确认删除这条记录吗？');">删除</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>
+

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>新增记账 - EasyLedger</title>
+    <title th:text="${formTitle != null ? formTitle + ' - EasyLedger' : '新增记账 - EasyLedger'}">新增记账 - EasyLedger</title>
     <style>
         :root {
             --bg: #f5f7fb;
@@ -123,8 +123,8 @@
 <div class="container">
     <div class="header">
         <div>
-            <h1 class="title">新增记账</h1>
-            <div class="subtitle">快速记录一笔收入或支出</div>
+            <h1 class="title" th:text="${formTitle != null ? formTitle : '新增记账'}">新增记账</h1>
+            <div class="subtitle" th:text="${formSubtitle != null ? formSubtitle : '快速记录一笔收入或支出'}">快速记录一笔收入或支出</div>
         </div>
         <div class="actions">
             <a th:href="@{/transactions}">返回仪表盘</a>
@@ -134,7 +134,7 @@
     <div class="card">
         <p class="error" th:if="${error}" th:text="${error}"></p>
 
-        <form th:action="@{/transactions}" method="post" th:object="${transaction}" id="txnForm">
+        <form th:action="${formAction != null ? formAction : '/transactions'}" method="post" th:object="${transaction}" id="txnForm">
             <div class="grid">
                 <div class="field">
                     <label>类型</label>
@@ -168,7 +168,7 @@
                 </div>
             </div>
             <div class="actions-row">
-                <button type="submit" class="btn btn-primary">保存</button>
+                <button type="submit" class="btn btn-primary" th:text="${submitLabel != null ? submitLabel : '保存'}">保存</button>
                 <button type="reset" class="btn btn-light">清空</button>
             </div>
         </form>

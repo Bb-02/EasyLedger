@@ -13,6 +13,9 @@ public class StatsSummaryResponse {
     private List<CategoryAmountItem> categoryTotalsExpense;
     private List<DailyAmountItem> dailyIncomeTotals;
     private List<DailyAmountItem> dailyExpenseTotals;
+    private List<PeriodAmountItem> periodIncomeTotals;
+    private List<PeriodAmountItem> periodExpenseTotals;
+    private List<PeriodAmountItem> periodTotals;
 
     public BigDecimal getTotalIncome() {
         return totalIncome;
@@ -78,6 +81,30 @@ public class StatsSummaryResponse {
         this.dailyExpenseTotals = dailyExpenseTotals;
     }
 
+    public List<PeriodAmountItem> getPeriodIncomeTotals() {
+        return periodIncomeTotals;
+    }
+
+    public void setPeriodIncomeTotals(List<PeriodAmountItem> periodIncomeTotals) {
+        this.periodIncomeTotals = periodIncomeTotals;
+    }
+
+    public List<PeriodAmountItem> getPeriodExpenseTotals() {
+        return periodExpenseTotals;
+    }
+
+    public void setPeriodExpenseTotals(List<PeriodAmountItem> periodExpenseTotals) {
+        this.periodExpenseTotals = periodExpenseTotals;
+    }
+
+    public List<PeriodAmountItem> getPeriodTotals() {
+        return periodTotals;
+    }
+
+    public void setPeriodTotals(List<PeriodAmountItem> periodTotals) {
+        this.periodTotals = periodTotals;
+    }
+
     public static class CategoryAmountItem {
         private String categoryName;
         private BigDecimal amount;
@@ -109,6 +136,27 @@ public class StatsSummaryResponse {
 
         public void setDay(String day) {
             this.day = day;
+        }
+
+        public BigDecimal getAmount() {
+            return amount;
+        }
+
+        public void setAmount(BigDecimal amount) {
+            this.amount = amount;
+        }
+    }
+
+    public static class PeriodAmountItem {
+        private String label;
+        private BigDecimal amount;
+
+        public String getLabel() {
+            return label;
+        }
+
+        public void setLabel(String label) {
+            this.label = label;
         }
 
         public BigDecimal getAmount() {

@@ -87,22 +87,27 @@ public class TransactionController {
             @RequestParam(required = false) String type,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) String period,
             Model model) {
+        String normalizedPeriod = transactionService.normalizePeriod(period);
         model.addAttribute("type", type);
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
+        model.addAttribute("period", normalizedPeriod);
         model.addAttribute("recentTransactions", transactionService.findRecent(5));
         model.addAttribute("categoryNameMap", buildCategoryNameMap());
         return "dashboard";
     }
 
     @GetMapping("/records")
-    public String records(Model model) {
+    public String records(@RequestParam(required = false) String period, Model model) {
+        String normalizedPeriod = transactionService.normalizePeriod(period);
         List<LedgerTransaction> transactions = transactionService.findAll();
-        Map<LocalDate, List<LedgerTransaction>> grouped = transactions.stream()
-                .collect(Collectors.groupingBy(LedgerTransaction::getTxnDate, java.util.LinkedHashMap::new, Collectors.toList()));
+        Map<String, List<LedgerTransaction>> grouped = transactionService.groupByPeriod(transactions, normalizedPeriod);
         model.addAttribute("groupedTransactions", grouped);
         model.addAttribute("categoryNameMap", buildCategoryNameMap());
+        model.addAttribute("period", normalizedPeriod);
+        model.addAttribute("periodLabel", periodLabel(normalizedPeriod));
         return "transaction-records";
     }
 
@@ -111,8 +116,9 @@ public class TransactionController {
     public StatsSummaryResponse statsSummary(
             @RequestParam(required = false) String type,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-        return transactionService.buildSummary(type, startDate, endDate);
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) String period) {
+        return transactionService.buildSummary(type, startDate, endDate, period);
     }
 
     private LedgerTransaction defaultTransaction() {
@@ -152,5 +158,21 @@ public class TransactionController {
                 ? "/transactions/" + transaction.getId()
                 : "/transactions";
         model.addAttribute("formAction", action);
+    }
+
+    private String periodLabel(String period) {
+        if (period == null) {
+            return "天";
+        }
+        switch (period) {
+            case "week":
+                return "周";
+            case "month":
+                return "月";
+            case "year":
+                return "年";
+            default:
+                return "天";
+        }
     }
 }

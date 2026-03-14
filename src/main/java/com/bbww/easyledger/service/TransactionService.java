@@ -9,14 +9,35 @@ import com.bbww.easyledger.service.dto.StatsSummaryResponse;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAdjusters;
+import java.time.temporal.WeekFields;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @Service
 public class TransactionService {
+
+    private enum PeriodType {
+        DAY, WEEK, MONTH, YEAR
+    }
+
+    private static class PeriodBucket {
+        private final LocalDate sortKey;
+        private final String label;
+
+        private PeriodBucket(LocalDate sortKey, String label) {
+            this.sortKey = sortKey;
+            this.label = label;
+        }
+    }
 
     private final LedgerTransactionMapper transactionMapper;
     private final CategoryMapper categoryMapper;
@@ -69,18 +90,20 @@ public class TransactionService {
         return transactionMapper.selectList(query);
     }
 
-    public StatsSummaryResponse buildSummary(String type, LocalDate startDate, LocalDate endDate) {
+    public StatsSummaryResponse buildSummary(String type, LocalDate startDate, LocalDate endDate, String period) {
+        PeriodType periodType = parsePeriod(period);
         List<LedgerTransaction> transactions = findByFilter(type, startDate, endDate);
         Map<Long, String> categoryNameMap = buildCategoryNameMap();
 
         BigDecimal totalIncome = BigDecimal.ZERO;
         BigDecimal totalExpense = BigDecimal.ZERO;
         Map<String, BigDecimal> categoryTotals = new LinkedHashMap<>();
-        Map<String, BigDecimal> dailyTotals = new LinkedHashMap<>();
+        Map<LocalDate, BigDecimal> periodTotals = new LinkedHashMap<>();
         Map<String, BigDecimal> categoryTotalsIncome = new LinkedHashMap<>();
         Map<String, BigDecimal> categoryTotalsExpense = new LinkedHashMap<>();
-        Map<String, BigDecimal> dailyIncomeTotals = new LinkedHashMap<>();
-        Map<String, BigDecimal> dailyExpenseTotals = new LinkedHashMap<>();
+        Map<LocalDate, BigDecimal> periodIncomeTotals = new LinkedHashMap<>();
+        Map<LocalDate, BigDecimal> periodExpenseTotals = new LinkedHashMap<>();
+        Map<LocalDate, String> periodLabels = new LinkedHashMap<>();
 
         for (LedgerTransaction transaction : transactions) {
             BigDecimal amount = safeAmount(transaction.getAmount());
@@ -95,28 +118,53 @@ public class TransactionService {
             String categoryName = categoryNameMap.getOrDefault(transaction.getCategoryId(), "未分类");
             categoryTotals.put(categoryName, categoryTotals.getOrDefault(categoryName, BigDecimal.ZERO).add(signedAmount));
 
-            String day = transaction.getTxnDate() == null ? "未知日期" : transaction.getTxnDate().toString();
-            dailyTotals.put(day, dailyTotals.getOrDefault(day, BigDecimal.ZERO).add(signedAmount));
+            PeriodBucket bucket = toPeriodBucket(transaction.getTxnDate(), periodType);
+            periodLabels.putIfAbsent(bucket.sortKey, bucket.label);
+            periodTotals.put(bucket.sortKey, periodTotals.getOrDefault(bucket.sortKey, BigDecimal.ZERO).add(signedAmount));
 
             if ("INCOME".equals(transaction.getType())) {
                 categoryTotalsIncome.put(categoryName, categoryTotalsIncome.getOrDefault(categoryName, BigDecimal.ZERO).add(amount));
-                dailyIncomeTotals.put(day, dailyIncomeTotals.getOrDefault(day, BigDecimal.ZERO).add(amount));
+                periodIncomeTotals.put(bucket.sortKey, periodIncomeTotals.getOrDefault(bucket.sortKey, BigDecimal.ZERO).add(amount));
             } else if ("EXPENSE".equals(transaction.getType())) {
                 categoryTotalsExpense.put(categoryName, categoryTotalsExpense.getOrDefault(categoryName, BigDecimal.ZERO).add(amount));
-                dailyExpenseTotals.put(day, dailyExpenseTotals.getOrDefault(day, BigDecimal.ZERO).add(amount));
+                periodExpenseTotals.put(bucket.sortKey, periodExpenseTotals.getOrDefault(bucket.sortKey, BigDecimal.ZERO).add(amount));
             }
         }
+
+        List<LocalDate> sortedKeys = new ArrayList<>(periodLabels.keySet());
+        sortedKeys.sort(Comparator.nullsLast(Comparator.naturalOrder()));
+
+        List<StatsSummaryResponse.PeriodAmountItem> periodTotalItems = toPeriodItems(sortedKeys, periodLabels, periodTotals);
+        List<StatsSummaryResponse.PeriodAmountItem> periodIncomeItems = toPeriodItems(sortedKeys, periodLabels, periodIncomeTotals);
+        List<StatsSummaryResponse.PeriodAmountItem> periodExpenseItems = toPeriodItems(sortedKeys, periodLabels, periodExpenseTotals);
 
         StatsSummaryResponse response = new StatsSummaryResponse();
         response.setTotalIncome(totalIncome);
         response.setTotalExpense(totalExpense);
         response.setCategoryTotals(toCategoryItems(categoryTotals));
-        response.setDailyTotals(toDailyItems(dailyTotals));
+        response.setDailyTotals(toDailyItemsFromPeriodItems(periodTotalItems));
         response.setCategoryTotalsIncome(toCategoryItems(categoryTotalsIncome));
         response.setCategoryTotalsExpense(toCategoryItems(categoryTotalsExpense));
-        response.setDailyIncomeTotals(toDailyItems(dailyIncomeTotals));
-        response.setDailyExpenseTotals(toDailyItems(dailyExpenseTotals));
+        response.setDailyIncomeTotals(toDailyItemsFromPeriodItems(periodIncomeItems));
+        response.setDailyExpenseTotals(toDailyItemsFromPeriodItems(periodExpenseItems));
+        response.setPeriodTotals(periodTotalItems);
+        response.setPeriodIncomeTotals(periodIncomeItems);
+        response.setPeriodExpenseTotals(periodExpenseItems);
         return response;
+    }
+
+    public Map<String, List<LedgerTransaction>> groupByPeriod(List<LedgerTransaction> transactions, String period) {
+        PeriodType periodType = parsePeriod(period);
+        Map<String, List<LedgerTransaction>> grouped = new LinkedHashMap<>();
+        for (LedgerTransaction transaction : transactions) {
+            PeriodBucket bucket = toPeriodBucket(transaction.getTxnDate(), periodType);
+            grouped.computeIfAbsent(bucket.label, key -> new ArrayList<>()).add(transaction);
+        }
+        return grouped;
+    }
+
+    public String normalizePeriod(String period) {
+        return parsePeriod(period).name().toLowerCase(Locale.ROOT);
     }
 
     private Map<Long, String> buildCategoryNameMap() {
@@ -148,6 +196,74 @@ public class TransactionService {
             items.add(item);
         }
         return items;
+    }
+
+    private List<StatsSummaryResponse.PeriodAmountItem> toPeriodItems(List<LocalDate> sortedKeys,
+                                                                      Map<LocalDate, String> labels,
+                                                                      Map<LocalDate, BigDecimal> totals) {
+        List<StatsSummaryResponse.PeriodAmountItem> items = new ArrayList<>();
+        for (LocalDate key : sortedKeys) {
+            StatsSummaryResponse.PeriodAmountItem item = new StatsSummaryResponse.PeriodAmountItem();
+            item.setLabel(labels.get(key));
+            item.setAmount(totals.getOrDefault(key, BigDecimal.ZERO));
+            items.add(item);
+        }
+        return items;
+    }
+
+    private List<StatsSummaryResponse.DailyAmountItem> toDailyItemsFromPeriodItems(
+            List<StatsSummaryResponse.PeriodAmountItem> periodItems) {
+        List<StatsSummaryResponse.DailyAmountItem> items = new ArrayList<>();
+        for (StatsSummaryResponse.PeriodAmountItem periodItem : periodItems) {
+            StatsSummaryResponse.DailyAmountItem item = new StatsSummaryResponse.DailyAmountItem();
+            item.setDay(periodItem.getLabel());
+            item.setAmount(periodItem.getAmount());
+            items.add(item);
+        }
+        return items;
+    }
+
+    private PeriodType parsePeriod(String period) {
+        if (period == null || period.isBlank()) {
+            return PeriodType.DAY;
+        }
+        switch (period.trim().toLowerCase(Locale.ROOT)) {
+            case "week":
+                return PeriodType.WEEK;
+            case "month":
+                return PeriodType.MONTH;
+            case "year":
+                return PeriodType.YEAR;
+            default:
+                return PeriodType.DAY;
+        }
+    }
+
+    private PeriodBucket toPeriodBucket(LocalDate date, PeriodType periodType) {
+        if (date == null) {
+            return new PeriodBucket(null, "未知日期");
+        }
+        switch (periodType) {
+            case WEEK:
+                WeekFields weekFields = WeekFields.ISO;
+                int week = date.get(weekFields.weekOfWeekBasedYear());
+                int weekYear = date.get(weekFields.weekBasedYear());
+                LocalDate weekStart = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+                LocalDate weekEnd = weekStart.plusDays(6);
+                DateTimeFormatter md = DateTimeFormatter.ofPattern("MM-dd");
+                String weekLabel = String.format("%d-W%02d (%s ~ %s)", weekYear, week,
+                        weekStart.format(md), weekEnd.format(md));
+                return new PeriodBucket(weekStart, weekLabel);
+            case MONTH:
+                YearMonth yearMonth = YearMonth.from(date);
+                return new PeriodBucket(yearMonth.atDay(1), yearMonth.toString());
+            case YEAR:
+                LocalDate yearStart = LocalDate.of(date.getYear(), 1, 1);
+                return new PeriodBucket(yearStart, String.valueOf(date.getYear()));
+            case DAY:
+            default:
+                return new PeriodBucket(date, date.toString());
+        }
     }
 
     private BigDecimal safeAmount(BigDecimal amount) {

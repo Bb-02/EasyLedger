@@ -65,7 +65,7 @@
         .filters {
             padding: 14px;
             display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr));
+            grid-template-columns: repeat(6, minmax(0, 1fr));
             gap: 10px;
             margin-bottom: 16px;
         }
@@ -206,6 +206,15 @@
             <label>结束日期</label>
             <input type="date" name="endDate" th:value="${endDate}">
         </div>
+        <div>
+            <label>周期</label>
+            <select name="period" id="periodSelect">
+                <option value="day" th:selected="${period == 'day' || period == null}">按天</option>
+                <option value="week" th:selected="${period == 'week'}">按周</option>
+                <option value="month" th:selected="${period == 'month'}">按月</option>
+                <option value="year" th:selected="${period == 'year'}">按年</option>
+            </select>
+        </div>
         <div class="btn-row">
             <button class="btn btn-primary" type="submit">筛选</button>
             <a class="btn btn-light" th:href="@{/transactions}">重置</a>
@@ -233,7 +242,13 @@
     <div class="charts">
         <div class="card chart-box">
             <div class="chart-header">
-                <h3 class="chart-title">按天金额趋势</h3>
+                <h3 class="chart-title" id="periodTitle">按天金额趋势</h3>
+                <div class="toggle-group" id="periodToggle">
+                    <button type="button" class="toggle-btn active" data-period="day">天</button>
+                    <button type="button" class="toggle-btn" data-period="week">周</button>
+                    <button type="button" class="toggle-btn" data-period="month">月</button>
+                    <button type="button" class="toggle-btn" data-period="year">年</button>
+                </div>
             </div>
             <div id="dailyBarChart" class="chart"></div>
         </div>
@@ -309,11 +324,42 @@
         const summaryBaseUrl = /*[[@{/transactions/stats/summary}]]*/ "/transactions/stats/summary";
         const params = new URLSearchParams(window.location.search);
         const query = new URLSearchParams();
-        ["type", "startDate", "endDate"].forEach(function (k) {
+        ["type", "startDate", "endDate", "period"].forEach(function (k) {
             const v = params.get(k);
             if (v) query.set(k, v);
         });
-        const url = query.toString() ? summaryBaseUrl + "?" + query.toString() : summaryBaseUrl;
+        const initialPeriod = params.get("period") || "day";
+        const periodLabels = {
+            day: "按天金额趋势",
+            week: "按周金额趋势",
+            month: "按月金额趋势",
+            year: "按年金额趋势"
+        };
+        const periodTitle = document.getElementById("periodTitle");
+        const periodToggle = document.getElementById("periodToggle");
+        const periodSelect = document.getElementById("periodSelect");
+
+        function buildUrl(period) {
+            const nextQuery = new URLSearchParams();
+            ["type", "startDate", "endDate"].forEach(function (k) {
+                const v = params.get(k);
+                if (v) nextQuery.set(k, v);
+            });
+            nextQuery.set("period", period || "day");
+            return summaryBaseUrl + "?" + nextQuery.toString();
+        }
+
+        function updatePeriodUi(period) {
+            const title = periodLabels[period] || periodLabels.day;
+            if (periodTitle) periodTitle.textContent = title;
+            if (periodSelect) periodSelect.value = period;
+            if (periodToggle) {
+                const buttons = periodToggle.querySelectorAll(".toggle-btn");
+                buttons.forEach(function (btn) {
+                    btn.classList.toggle("active", btn.getAttribute("data-period") === period);
+                });
+            }
+        }
 
         function setStatus(status, msg) {
             document.getElementById("statusCell").textContent = status;
@@ -324,7 +370,8 @@
             return Number(v || 0).toLocaleString("zh-CN", { maximumFractionDigits: 2 });
         }
 
-        function render(payload) {
+        function render(payload, period) {
+            updatePeriodUi(period);
             const income = Number(payload.totalIncome || 0);
             const expense = Number(payload.totalExpense || 0);
             const net = income - expense;
@@ -333,22 +380,31 @@
             document.getElementById("totalExpense").textContent = fmt(expense);
             document.getElementById("netAmount").textContent = fmt(net);
 
-            const dailyIncome = payload.dailyIncomeTotals || [];
-            const dailyExpense = payload.dailyExpenseTotals || [];
-            const dayMap = {};
-            dailyIncome.forEach(function (item) {
-                const day = item.day || "未知日期";
-                if (!dayMap[day]) dayMap[day] = { income: 0, expense: 0 };
-                dayMap[day].income = Number(item.amount || 0);
+            const periodIncome = payload.periodIncomeTotals || [];
+            const periodExpense = payload.periodExpenseTotals || [];
+            const bucketMap = {};
+            const labels = [];
+
+            function ensureLabel(label) {
+                if (!bucketMap[label]) {
+                    bucketMap[label] = { income: 0, expense: 0 };
+                    labels.push(label);
+                }
+            }
+
+            periodIncome.forEach(function (item) {
+                const label = item.label || "未知日期";
+                ensureLabel(label);
+                bucketMap[label].income = Number(item.amount || 0);
             });
-            dailyExpense.forEach(function (item) {
-                const day = item.day || "未知日期";
-                if (!dayMap[day]) dayMap[day] = { income: 0, expense: 0 };
-                dayMap[day].expense = Number(item.amount || 0);
+            periodExpense.forEach(function (item) {
+                const label = item.label || "未知日期";
+                ensureLabel(label);
+                bucketMap[label].expense = Number(item.amount || 0);
             });
-            const days = Object.keys(dayMap).sort();
-            const incomeSeries = days.map(function (day) { return dayMap[day].income || 0; });
-            const expenseSeries = days.map(function (day) { return dayMap[day].expense || 0; });
+
+            const incomeSeries = labels.map(function (label) { return bucketMap[label].income || 0; });
+            const expenseSeries = labels.map(function (label) { return bucketMap[label].expense || 0; });
 
             const categoryIncome = payload.categoryTotalsIncome || [];
             const categoryExpense = payload.categoryTotalsExpense || [];
@@ -358,7 +414,7 @@
                 tooltip: { trigger: "axis" },
                 legend: { data: ["收入", "支出"] },
                 grid: { left: 30, right: 16, bottom: 24, top: 32, containLabel: true },
-                xAxis: { type: "category", data: days },
+                xAxis: { type: "category", data: labels },
                 yAxis: { type: "value" },
                 series: [
                     {
@@ -433,20 +489,40 @@
             setStatus("成功", "统计数据已加载，图表渲染完成。");
         }
 
+        function fetchSummary(period) {
+            const url = buildUrl(period);
+            fetch(url)
+                .then(function (resp) {
+                    if (!resp.ok) throw new Error("HTTP " + resp.status);
+                    return resp.json();
+                })
+                .then(function (payload) {
+                    render(payload, period || "day");
+                })
+                .catch(function (err) {
+                    setStatus("失败", "统计接口调用失败: " + err.message);
+                });
+        }
+
         if (!window.echarts) {
             setStatus("失败", "ECharts CDN 加载失败，请检查网络连接。");
             return;
         }
 
-        fetch(url)
-            .then(function (resp) {
-                if (!resp.ok) throw new Error("HTTP " + resp.status);
-                return resp.json();
-            })
-            .then(render)
-            .catch(function (err) {
-                setStatus("失败", "统计接口调用失败: " + err.message);
+        if (periodToggle) {
+            periodToggle.addEventListener("click", function (event) {
+                const target = event.target;
+                if (!target || !target.classList.contains("toggle-btn")) return;
+                const period = target.getAttribute("data-period") || "day";
+                params.set("period", period);
+                const queryString = params.toString();
+                const nextUrl = queryString ? window.location.pathname + "?" + queryString : window.location.pathname;
+                window.history.replaceState(null, "", nextUrl);
+                fetchSummary(period);
             });
+        }
+
+        fetchSummary(initialPeriod);
     })();
 </script>
 </body>

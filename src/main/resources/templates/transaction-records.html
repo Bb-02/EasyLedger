@@ -54,6 +54,27 @@
             font-size: 13px;
             display: inline-block;
         }
+        .actions form {
+            display: inline-flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .actions select {
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #fff;
+            font-size: 13px;
+        }
+        .actions button {
+            border: none;
+            background: #eef2ff;
+            color: #1d4ed8;
+            padding: 8px 10px;
+            border-radius: 10px;
+            font-size: 13px;
+            cursor: pointer;
+        }
         .card {
             background: var(--card);
             border: 1px solid var(--border);
@@ -93,9 +114,18 @@
     <div class="header">
         <div>
             <h1 class="title">记账统计</h1>
-            <div class="subtitle">按日期查看全部流水记录</div>
+            <div class="subtitle" th:text="'按' + ${periodLabel} + '查看全部流水记录'">按日期查看全部流水记录</div>
         </div>
         <div class="actions">
+            <form th:action="@{/transactions/records}" method="get">
+                <select name="period">
+                    <option value="day" th:selected="${period == 'day' || period == null}">按天</option>
+                    <option value="week" th:selected="${period == 'week'}">按周</option>
+                    <option value="month" th:selected="${period == 'month'}">按月</option>
+                    <option value="year" th:selected="${period == 'year'}">按年</option>
+                </select>
+                <button type="submit">切换</button>
+            </form>
             <a th:href="@{/transactions}">返回仪表盘</a>
         </div>
     </div>

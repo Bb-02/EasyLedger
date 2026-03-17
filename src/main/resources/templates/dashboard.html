@@ -110,7 +110,7 @@
             padding: 14px;
         }
         .stat .k { color: var(--muted); font-size: 13px; }
-        .stat .v { margin-top: 6px; font-size: 26px; font-weight: 700; }
+        .stat .v { margin-top: 6px; font-size: 28px; font-weight: 720; }
         .income { color: var(--success); }
         .expense { color: var(--danger); }
 
@@ -403,8 +403,21 @@
                 bucketMap[label].expense = Number(item.amount || 0);
             });
 
-            const incomeSeries = labels.map(function (label) { return bucketMap[label].income || 0; });
-            const expenseSeries = labels.map(function (label) { return bucketMap[label].expense || 0; });
+            const allBuckets = labels.map(function (label) {
+                return {
+                    label: label,
+                    income: bucketMap[label].income || 0,
+                    expense: bucketMap[label].expense || 0
+                };
+            });
+            const nonZeroBuckets = allBuckets.filter(function (b) {
+                return b.income > 0 || b.expense > 0;
+            });
+            const bucketSource = nonZeroBuckets.length ? nonZeroBuckets : allBuckets;
+            const recentBuckets = bucketSource.slice(-7);
+            const limitedLabels = recentBuckets.map(function (b) { return b.label; });
+            const incomeSeries = recentBuckets.map(function (b) { return b.income; });
+            const expenseSeries = recentBuckets.map(function (b) { return b.expense; });
 
             const categoryIncome = payload.categoryTotalsIncome || [];
             const categoryExpense = payload.categoryTotalsExpense || [];
@@ -414,7 +427,7 @@
                 tooltip: { trigger: "axis" },
                 legend: { data: ["收入", "支出"] },
                 grid: { left: 30, right: 16, bottom: 24, top: 32, containLabel: true },
-                xAxis: { type: "category", data: labels },
+                xAxis: { type: "category", data: limitedLabels },
                 yAxis: { type: "value" },
                 series: [
                     {

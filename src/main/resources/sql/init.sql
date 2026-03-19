@@ -41,3 +41,11 @@ WHERE NOT EXISTS (SELECT 1 FROM ledger_category WHERE name = '交通' AND type =
 INSERT INTO ledger_category (name, type, sort, enabled)
 SELECT '购物', 'EXPENSE', 3, 1 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM ledger_category WHERE name = '购物' AND type = 'EXPENSE');
+
+INSERT INTO ledger_category (name, type, sort, enabled)
+SELECT '其他', 'INCOME', 99, 1 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM ledger_category WHERE name = '其他' AND type = 'INCOME');
+
+INSERT INTO ledger_category (name, type, sort, enabled)
+SELECT '其他', 'EXPENSE', 99, 1 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM ledger_category WHERE name = '其他' AND type = 'EXPENSE');

@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -89,6 +90,9 @@ public class TransactionController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(required = false) String period,
             Model model) {
+        LocalDate[] range = resolveDateRange(startDate, endDate);
+        startDate = range[0];
+        endDate = range[1];
         String normalizedPeriod = transactionService.normalizePeriod(period);
         model.addAttribute("type", type);
         model.addAttribute("startDate", startDate);
@@ -118,7 +122,8 @@ public class TransactionController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(required = false) String period) {
-        return transactionService.buildSummary(type, startDate, endDate, period);
+        LocalDate[] range = resolveDateRange(startDate, endDate);
+        return transactionService.buildSummary(type, range[0], range[1], period);
     }
 
     private LedgerTransaction defaultTransaction() {
@@ -174,5 +179,13 @@ public class TransactionController {
             default:
                 return "天";
         }
+    }
+
+    private LocalDate[] resolveDateRange(LocalDate startDate, LocalDate endDate) {
+        if (startDate == null && endDate == null) {
+            YearMonth current = YearMonth.now();
+            return new LocalDate[]{current.atDay(1), current.atEndOfMonth()};
+        }
+        return new LocalDate[]{startDate, endDate};
     }
 }

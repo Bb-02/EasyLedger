@@ -4,18 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>记账统计 - EasyLedger</title>
+    <link rel="stylesheet" th:href="@{/css/theme.css}" href="/css/theme.css">
     <style>
-        :root {
-            --bg: #f5f7fb;
-            --card: #ffffff;
-            --text: #1f2937;
-            --muted: #6b7280;
-            --primary: #3b82f6;
-            --danger: #dc2626;
-            --border: #e5e7eb;
-            --shadow: 0 6px 20px rgba(17, 24, 39, 0.08);
-            --radius: 12px;
-        }
         * { box-sizing: border-box; }
         body {
             margin: 0;
@@ -153,9 +143,9 @@
                 <td th:text="${t.amount}" th:classappend="${t.type == 'EXPENSE' ? 'expense' : ''}">0.00</td>
                 <td th:text="${t.note}">-</td>
                 <td>
-                    <a th:href="@{'/transactions/' + ${t.id} + '/edit'}">编辑</a>
+                    <a class="btn-chip btn-chip--edit" th:href="@{'/transactions/' + ${t.id} + '/edit'}">编辑</a>
                     <form th:action="@{'/transactions/' + ${t.id} + '/delete'}" method="post" style="display:inline; margin-left: 8px;">
-                        <button type="submit" onclick="return confirm('确认删除这条记录吗？');">删除</button>
+                        <button type="submit" class="btn-chip btn-chip--delete" onclick="return confirm('确认删除这条记录吗？');">删除</button>
                     </form>
                 </td>
             </tr>

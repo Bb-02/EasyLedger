@@ -35,7 +35,14 @@
             color: var(--muted);
             font-size: 13px;
         }
-        .actions a {
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .actions .action-link {
             text-decoration: none;
             background: #eef2ff;
             color: #1d4ed8;
@@ -43,6 +50,7 @@
             border-radius: 10px;
             font-size: 13px;
             display: inline-block;
+            border: 1px solid #c7d2fe;
         }
         .actions form {
             display: inline-flex;
@@ -116,7 +124,8 @@
                 </select>
                 <button type="submit">切换</button>
             </form>
-            <a th:href="@{/transactions}">返回仪表盘</a>
+            <a class="action-link" th:href="@{/settings}">设置</a>
+            <a class="action-link" th:href="@{/transactions}">返回仪表盘</a>
         </div>
     </div>
 

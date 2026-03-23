@@ -35,7 +35,12 @@
             color: var(--muted);
             font-size: 13px;
         }
-        .actions a {
+        .actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .actions .action-link {
             text-decoration: none;
             background: #eef2ff;
             color: #1d4ed8;
@@ -43,6 +48,7 @@
             border-radius: 10px;
             font-size: 13px;
             display: inline-block;
+            border: 1px solid #c7d2fe;
         }
         .card {
             background: var(--card);
@@ -118,7 +124,8 @@
             <div class="subtitle" th:text="${formSubtitle != null ? formSubtitle : '快速记录一笔收入或支出'}">快速记录一笔收入或支出</div>
         </div>
         <div class="actions">
-            <a th:href="@{/transactions}">返回仪表盘</a>
+            <a class="action-link" th:href="@{/settings}">设置</a>
+            <a class="action-link" th:href="@{/transactions}">返回仪表盘</a>
         </div>
     </div>
 

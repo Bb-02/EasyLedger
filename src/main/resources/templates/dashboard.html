@@ -36,15 +36,22 @@
             color: var(--muted);
             font-size: 13px;
         }
-        .actions a {
+        .actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .actions .action-link {
             text-decoration: none;
-            background: var(--primary);
-            color: #fff;
             padding: 10px 14px;
             border-radius: 10px;
             font-size: 14px;
             display: inline-block;
+            border: 1px solid transparent;
         }
+        .actions .action-primary { background: var(--primary); color: #fff; }
+        .actions .action-secondary { background: #e0e7ff; color: #1d4ed8; border-color: #c7d2fe; }
+
         .card {
             background: var(--card);
             border: 1px solid var(--border);
@@ -174,7 +181,8 @@
             <p class="subtitle">Dashboard v1 - 2026-03-12</p>
         </div>
         <div class="actions">
-            <a th:href="@{/transactions/new}">+ 新增记账</a>
+            <a class="action-link action-secondary" th:href="@{/settings}">设置</a>
+            <a class="action-link action-primary" th:href="@{/transactions/new}">+ 新增记账</a>
         </div>
     </div>
 

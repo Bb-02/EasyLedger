@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>设置 - EasyLedger</title>
+    <link rel="stylesheet" th:href="@{/css/theme.css}" href="/css/theme.css">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            color: var(--text);
+            background: var(--bg);
+        }
+        .container {
+            max-width: 900px;
+            margin: 24px auto;
+            padding: 0 16px 24px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .title {
+            margin: 0;
+            font-size: 26px;
+            font-weight: 700;
+        }
+        .subtitle {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 13px;
+        }
+        .actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .actions .action-link {
+            text-decoration: none;
+            background: #eef2ff;
+            color: #1d4ed8;
+            padding: 9px 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            display: inline-block;
+            border: 1px solid #c7d2fe;
+        }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+        .section-title {
+            margin: 0 0 10px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+        .setting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .setting-row:last-child {
+            border-bottom: none;
+        }
+        .setting-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .setting-name {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .setting-desc {
+            color: var(--muted);
+            font-size: 12px;
+        }
+        .note {
+            color: var(--muted);
+            font-size: 12px;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div>
+            <h1 class="title">设置</h1>
+            <p class="subtitle">功能开关与个性化配置的入口</p>
+        </div>
+        <div class="actions">
+            <a class="action-link" th:href="@{/transactions}">返回仪表盘</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2 class="section-title">功能开关（预留）</h2>
+        <div class="setting-row">
+            <div class="setting-info">
+                <div class="setting-name">主题模式</div>
+                <div class="setting-desc">支持浅色/暗夜模式切换</div>
+            </div>
+            <input type="checkbox" disabled>
+        </div>
+        <div class="setting-row">
+            <div class="setting-info">
+                <div class="setting-name">仪表盘图表开关</div>
+                <div class="setting-desc">控制首页图表是否显示</div>
+            </div>
+            <input type="checkbox" disabled>
+        </div>
+        <div class="setting-row">
+            <div class="setting-info">
+                <div class="setting-name">默认统计周期</div>
+                <div class="setting-desc">按天/周/月/年选择默认展示</div>
+            </div>
+            <input type="checkbox" disabled>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2 class="section-title">说明</h2>
+        <p class="note">这些选项将用于后续的个性化与偏好设置，当前仅预留入口。</p>
+    </div>
+</div>
+</body>
+</html>
+

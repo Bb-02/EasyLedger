@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>EasyLedger Dashboard</title>
     <link rel="stylesheet" th:href="@{/css/theme.css}" href="/css/theme.css">
+    <script>
+        (function () {
+            var theme = localStorage.getItem("easyledger-theme");
+            if (theme === "dark") {
+                document.documentElement.setAttribute("data-theme", "dark");
+            } else {
+                document.documentElement.removeAttribute("data-theme");
+            }
+        })();
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
     <style>
         * { box-sizing: border-box; }
@@ -50,7 +60,7 @@
             border: 1px solid transparent;
         }
         .actions .action-primary { background: var(--primary); color: #fff; }
-        .actions .action-secondary { background: #e0e7ff; color: #1d4ed8; border-color: #c7d2fe; }
+        .actions .action-secondary { background: var(--action-bg); color: var(--action-text); border-color: var(--action-border); }
 
         .card {
             background: var(--card);
@@ -77,7 +87,8 @@
             padding: 9px 10px;
             border: 1px solid var(--border);
             border-radius: 8px;
-            background: #fff;
+            background: var(--input-bg);
+            color: var(--text);
         }
         .btn-row {
             display: flex;
@@ -94,7 +105,7 @@
             display: inline-block;
         }
         .btn-primary { background: var(--primary); color: #fff; }
-        .btn-light { background: #eef2ff; color: #1d4ed8; }
+        .btn-light { background: var(--action-bg); color: var(--action-text); border: 1px solid var(--action-border); }
 
         .stats {
             display: grid;
@@ -129,7 +140,7 @@
         .toggle-group {
             display: flex;
             gap: 6px;
-            background: #f1f5f9;
+            background: var(--toggle-bg);
             padding: 4px;
             border-radius: 999px;
         }
@@ -143,9 +154,10 @@
             cursor: pointer;
         }
         .toggle-btn.active {
-            background: #fff;
+            background: var(--toggle-active-bg);
             color: var(--text);
             box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+            border: 1px solid var(--border);
         }
 
         .table-wrap {
@@ -155,7 +167,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            background: #fff;
+            background: var(--table-bg);
         }
         th, td {
             border-bottom: 1px solid var(--border);
@@ -164,7 +176,7 @@
             font-size: 14px;
             white-space: nowrap;
         }
-        th { background: #f8fafc; }
+        th { background: var(--table-head-bg); }
 
         @media (max-width: 960px) {
             .filters { grid-template-columns: 1fr 1fr; }
@@ -367,6 +379,17 @@
             return Number(v || 0).toLocaleString("zh-CN", { maximumFractionDigits: 2 });
         }
 
+        function getThemeColors() {
+            const styles = getComputedStyle(document.documentElement);
+            return {
+                text: styles.getPropertyValue("--text").trim() || "#1f2937",
+                muted: styles.getPropertyValue("--muted").trim() || "#6b7280",
+                border: styles.getPropertyValue("--border").trim() || "#e5e7eb",
+                success: styles.getPropertyValue("--success").trim() || "#16a34a",
+                danger: styles.getPropertyValue("--danger").trim() || "#dc2626"
+            };
+        }
+
         function render(payload, period) {
             updatePeriodUi(period);
             const income = Number(payload.totalIncome || 0);
@@ -418,28 +441,39 @@
 
             const categoryIncome = payload.categoryTotalsIncome || [];
             const categoryExpense = payload.categoryTotalsExpense || [];
+            const colors = getThemeColors();
 
             const barChart = echarts.init(document.getElementById("dailyBarChart"));
             barChart.setOption({
                 tooltip: { trigger: "axis" },
-                legend: { data: ["收入", "支出"] },
+                legend: { data: ["收入", "支出"], textStyle: { color: colors.muted } },
                 grid: { left: 30, right: 16, bottom: 24, top: 32, containLabel: true },
-                xAxis: { type: "category", data: limitedLabels },
-                yAxis: { type: "value" },
+                xAxis: {
+                    type: "category",
+                    data: limitedLabels,
+                    axisLabel: { color: colors.muted },
+                    axisLine: { lineStyle: { color: colors.border } }
+                },
+                yAxis: {
+                    type: "value",
+                    axisLabel: { color: colors.muted },
+                    axisLine: { lineStyle: { color: colors.border } },
+                    splitLine: { lineStyle: { color: colors.border } }
+                },
                 series: [
                     {
                         name: "收入",
                         type: "bar",
                         data: incomeSeries,
                         barMaxWidth: 24,
-                        itemStyle: { color: "#16a34a" }
+                        itemStyle: { color: colors.success }
                     },
                     {
                         name: "支出",
                         type: "bar",
                         data: expenseSeries,
                         barMaxWidth: 24,
-                        itemStyle: { color: "#dc2626" }
+                        itemStyle: { color: colors.danger }
                     }
                 ]
             });
@@ -459,11 +493,12 @@
                 const data = buildPieData(type);
                 pieChart.setOption({
                     tooltip: { trigger: "item" },
-                    legend: { bottom: 0 },
+                    legend: { bottom: 0, textStyle: { color: colors.muted } },
                     series: [{
                         type: "pie",
                         radius: ["35%", "65%"],
                         avoidLabelOverlap: true,
+                        label: { color: colors.text },
                         data: data
                     }]
                 });

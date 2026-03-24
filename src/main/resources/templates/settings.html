@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>设置 - EasyLedger</title>
     <link rel="stylesheet" th:href="@{/css/theme.css}" href="/css/theme.css">
+    <script>
+        (function () {
+            var theme = localStorage.getItem("easyledger-theme");
+            if (theme === "dark") {
+                document.documentElement.setAttribute("data-theme", "dark");
+            } else {
+                document.documentElement.removeAttribute("data-theme");
+            }
+        })();
+    </script>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -42,13 +52,13 @@
         }
         .actions .action-link {
             text-decoration: none;
-            background: #eef2ff;
-            color: #1d4ed8;
+            background: var(--action-bg);
+            color: var(--action-text);
             padding: 9px 12px;
             border-radius: 10px;
             font-size: 13px;
             display: inline-block;
-            border: 1px solid #c7d2fe;
+            border: 1px solid var(--action-border);
         }
         .card {
             background: var(--card);
@@ -71,21 +81,56 @@
             padding: 10px 0;
             border-bottom: 1px solid var(--border);
         }
-        .setting-row:last-child {
-            border-bottom: none;
+        .setting-row.is-toggle {
+            cursor: pointer;
         }
-        .setting-info {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-        .setting-name {
-            font-size: 14px;
-            font-weight: 600;
-        }
-        .setting-desc {
-            color: var(--muted);
+        .setting-action {
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: var(--action-bg);
+            color: var(--action-text);
+            border: 1px solid var(--action-border);
             font-size: 12px;
+        }
+        .expand-panel {
+            display: none;
+            padding: 10px 0 4px;
+        }
+        .expand-panel.is-open {
+            display: block;
+        }
+        .theme-options {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .theme-card {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            cursor: pointer;
+            min-width: 180px;
+        }
+        .theme-card input {
+            margin-left: auto;
+        }
+        .theme-preview {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+        .theme-preview.day {
+            background: #f8fafc;
+            border-color: #e5e7eb;
+        }
+        .theme-preview.dark {
+            background: #0d1117;
+            border-color: #30363d;
         }
         .note {
             color: var(--muted);
@@ -108,12 +153,27 @@
 
     <div class="card">
         <h2 class="section-title">功能开关（预留）</h2>
-        <div class="setting-row">
+        <div class="setting-row is-toggle" id="themeToggleRow" role="button" tabindex="0" aria-expanded="false" aria-controls="themePanel">
             <div class="setting-info">
                 <div class="setting-name">主题模式</div>
                 <div class="setting-desc">支持浅色/暗夜模式切换</div>
             </div>
-            <input type="checkbox" disabled>
+            <span class="setting-action" id="themeToggleAction">展开</span>
+        </div>
+        <div class="expand-panel" id="themePanel">
+            <div class="theme-options">
+                <label class="theme-card" for="themeLight">
+                    <span class="theme-preview day"></span>
+                    <span>白天</span>
+                    <input type="radio" name="themeMode" value="light" id="themeLight">
+                </label>
+                <label class="theme-card" for="themeDark">
+                    <span class="theme-preview dark"></span>
+                    <span>暗夜</span>
+                    <input type="radio" name="themeMode" value="dark" id="themeDark">
+                </label>
+            </div>
+            <p class="note" style="margin-top: 8px;">切换后会记住你的选择。</p>
         </div>
         <div class="setting-row">
             <div class="setting-info">
@@ -136,6 +196,69 @@
         <p class="note">这些选项将用于后续的个性化与偏好设置，当前仅预留入口。</p>
     </div>
 </div>
+
+<script>
+    (function () {
+        var themeKey = "easyledger-theme";
+        var doc = document.documentElement;
+        var row = document.getElementById("themeToggleRow");
+        var panel = document.getElementById("themePanel");
+        var action = document.getElementById("themeToggleAction");
+        var lightRadio = document.getElementById("themeLight");
+        var darkRadio = document.getElementById("themeDark");
+
+        function applyTheme(next) {
+            if (next === "dark") {
+                doc.setAttribute("data-theme", "dark");
+            } else {
+                doc.removeAttribute("data-theme");
+            }
+            localStorage.setItem(themeKey, next);
+        }
+
+        function setPanel(open) {
+            if (!panel || !row || !action) return;
+            panel.classList.toggle("is-open", open);
+            row.setAttribute("aria-expanded", open ? "true" : "false");
+            action.textContent = open ? "收起" : "展开";
+        }
+
+        var storedTheme = localStorage.getItem(themeKey) || "light";
+        if (darkRadio && lightRadio) {
+            if (storedTheme === "dark") {
+                darkRadio.checked = true;
+            } else {
+                lightRadio.checked = true;
+            }
+        }
+        applyTheme(storedTheme === "dark" ? "dark" : "light");
+
+        if (row && panel) {
+            setPanel(false);
+            row.addEventListener("click", function (event) {
+                if (event.target && event.target.tagName === "INPUT") return;
+                setPanel(!panel.classList.contains("is-open"));
+            });
+            row.addEventListener("keydown", function (event) {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setPanel(!panel.classList.contains("is-open"));
+                }
+            });
+        }
+
+        if (lightRadio) {
+            lightRadio.addEventListener("change", function () {
+                if (lightRadio.checked) applyTheme("light");
+            });
+        }
+        if (darkRadio) {
+            darkRadio.addEventListener("change", function () {
+                if (darkRadio.checked) applyTheme("dark");
+            });
+        }
+    })();
+</script>
 </body>
 </html>
 

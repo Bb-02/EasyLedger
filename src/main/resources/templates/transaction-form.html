@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${formTitle != null ? formTitle + ' - EasyLedger' : '新增记账 - EasyLedger'}">新增记账 - EasyLedger</title>
     <link rel="stylesheet" th:href="@{/css/theme.css}" href="/css/theme.css">
+    <script>
+        (function () {
+            var theme = localStorage.getItem("easyledger-theme");
+            if (theme === "dark") {
+                document.documentElement.setAttribute("data-theme", "dark");
+            } else {
+                document.documentElement.removeAttribute("data-theme");
+            }
+        })();
+    </script>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -42,13 +52,13 @@
         }
         .actions .action-link {
             text-decoration: none;
-            background: #eef2ff;
-            color: #1d4ed8;
+            background: var(--action-bg);
+            color: var(--action-text);
             padding: 9px 12px;
             border-radius: 10px;
             font-size: 13px;
             display: inline-block;
-            border: 1px solid #c7d2fe;
+            border: 1px solid var(--action-border);
         }
         .card {
             background: var(--card);
@@ -77,16 +87,17 @@
             border-radius: 8px;
             padding: 10px 12px;
             font-size: 14px;
-            background: #fff;
+            background: var(--input-bg);
+            color: var(--text);
         }
         .field.full { grid-column: 1 / -1; }
         .error {
-            background: #fef2f2;
-            color: #b91c1c;
+            background: var(--danger-bg);
+            color: var(--danger-text);
             padding: 10px 12px;
             border-radius: 8px;
             margin-bottom: 12px;
-            border: 1px solid #fecaca;
+            border: 1px solid var(--danger-border);
             font-size: 13px;
         }
         .hint {
@@ -109,7 +120,7 @@
             display: inline-block;
         }
         .btn-primary { background: var(--primary); color: #fff; }
-        .btn-light { background: #eef2ff; color: #1d4ed8; }
+        .btn-light { background: var(--action-bg); color: var(--action-text); border: 1px solid var(--action-border); }
 
         @media (max-width: 720px) {
             .grid { grid-template-columns: 1fr; }

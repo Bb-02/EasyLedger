@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>记账统计 - EasyLedger</title>
     <link rel="stylesheet" th:href="@{/css/theme.css}" href="/css/theme.css">
+    <script>
+        (function () {
+            var theme = localStorage.getItem("easyledger-theme");
+            if (theme === "dark") {
+                document.documentElement.setAttribute("data-theme", "dark");
+            } else {
+                document.documentElement.removeAttribute("data-theme");
+            }
+        })();
+    </script>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -44,13 +54,13 @@
         }
         .actions .action-link {
             text-decoration: none;
-            background: #eef2ff;
-            color: #1d4ed8;
+            background: var(--action-bg);
+            color: var(--action-text);
             padding: 9px 12px;
             border-radius: 10px;
             font-size: 13px;
             display: inline-block;
-            border: 1px solid #c7d2fe;
+            border: 1px solid var(--action-border);
         }
         .actions form {
             display: inline-flex;
@@ -61,17 +71,19 @@
             padding: 8px 10px;
             border: 1px solid var(--border);
             border-radius: 8px;
-            background: #fff;
+            background: var(--input-bg);
+            color: var(--text);
             font-size: 13px;
         }
         .actions button {
             border: none;
-            background: #eef2ff;
-            color: #1d4ed8;
+            background: var(--action-bg);
+            color: var(--action-text);
             padding: 8px 10px;
             border-radius: 10px;
             font-size: 13px;
             cursor: pointer;
+            border: 1px solid var(--action-border);
         }
         .card {
             background: var(--card);
@@ -89,7 +101,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            background: #fff;
+            background: var(--table-bg);
         }
         th, td {
             border-bottom: 1px solid var(--border);
@@ -98,7 +110,7 @@
             font-size: 14px;
             white-space: nowrap;
         }
-        th { background: #f8fafc; }
+        th { background: var(--table-head-bg); }
         .expense { color: var(--danger); }
         .empty {
             padding: 24px 12px;

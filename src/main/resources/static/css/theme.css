@@ -9,18 +9,52 @@
     --border: #e5e7eb;
     --shadow: 0 6px 20px rgba(17, 24, 39, 0.08);
     --radius: 12px;
+    --action-bg: #eef2ff;
+    --action-text: #1d4ed8;
+    --action-border: #c7d2fe;
+    --input-bg: #ffffff;
+    --table-bg: #ffffff;
+    --table-head-bg: #f8fafc;
+    --toggle-bg: #f1f5f9;
+    --toggle-active-bg: #ffffff;
+    --danger-bg: #fef2f2;
+    --danger-text: #b91c1c;
+    --danger-border: #fecaca;
+    --chip-edit-bg: #e0e7ff;
+    --chip-edit-text: #1d4ed8;
+    --chip-edit-border: #c7d2fe;
+    --chip-delete-bg: #fee2e2;
+    --chip-delete-text: #b91c1c;
+    --chip-delete-border: #fecaca;
 }
 
 [data-theme="dark"] {
-    --bg: #0f172a;
-    --card: #111827;
-    --text: #e5e7eb;
-    --muted: #94a3b8;
-    --primary: #60a5fa;
-    --success: #22c55e;
-    --danger: #f87171;
-    --border: #1f2937;
-    --shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    --bg: #22272e;
+    --card: #2d333b;
+    --text: #adbac7;
+    --muted: #768390;
+    --primary: #539bf5;
+    --success: #57ab5a;
+    --danger: #e5534b;
+    --border: #444c56;
+    --shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
+    --action-bg: #2d333b;
+    --action-text: #9ecbff;
+    --action-border: #444c56;
+    --input-bg: #22272e;
+    --table-bg: #22272e;
+    --table-head-bg: #2d333b;
+    --toggle-bg: #2d333b;
+    --toggle-active-bg: #373e47;
+    --danger-bg: #3d2626;
+    --danger-text: #f2a8a8;
+    --danger-border: #6b3d3d;
+    --chip-edit-bg: #2b4a6a;
+    --chip-edit-text: #adbac7;
+    --chip-edit-border: #3d5a7a;
+    --chip-delete-bg: #61323a;
+    --chip-delete-text: #f2a8a8;
+    --chip-delete-border: #7d3f48;
 }
 
 .btn-chip {
@@ -36,13 +70,13 @@
 }
 
 .btn-chip--edit {
-    background: #e0e7ff;
-    color: #1d4ed8;
-    border-color: #c7d2fe;
+    background: var(--chip-edit-bg);
+    color: var(--chip-edit-text);
+    border-color: var(--chip-edit-border);
 }
 
 .btn-chip--delete {
-    background: #fee2e2;
-    color: #b91c1c;
-    border-color: #fecaca;
+    background: var(--chip-delete-bg);
+    color: var(--chip-delete-text);
+    border-color: var(--chip-delete-border);
 }

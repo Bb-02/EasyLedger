@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>记账统计 - EasyLedger</title>
     <link rel="stylesheet" th:href="@{/css/theme.css}" href="/css/theme.css">
+    <link rel="icon" type="image/png" th:href="@{/images/EasyLedger.png}" href="/images/EasyLedger.png">
     <script>
         (function () {
             var theme = localStorage.getItem("easyledger-theme");
@@ -34,6 +35,18 @@
             align-items: center;
             gap: 12px;
             margin-bottom: 16px;
+        }
+        .title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .app-logo {
+            width: 45px;
+            height: 45px;
+            border-radius: 10px;
+            object-fit: cover;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
         }
         .title {
             margin: 0;
@@ -123,7 +136,10 @@
 <div class="container">
     <div class="header">
         <div>
-            <h1 class="title">记账统计</h1>
+            <div class="title-wrap">
+                <img class="app-logo" th:src="@{/images/EasyLedger.png}" src="/images/EasyLedger.png" alt="EasyLedger">
+                <h1 class="title">记账统计</h1>
+            </div>
             <div class="subtitle" th:text="'按' + ${periodLabel} + '查看全部流水记录'">按日期查看全部流水记录</div>
         </div>
         <div class="actions">

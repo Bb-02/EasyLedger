@@ -103,6 +103,50 @@
             background: var(--input-bg);
             color: var(--text);
         }
+        .filters .period-control {
+            grid-column: span 2;
+        }
+        .period-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .segmented {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--toggle-bg);
+            padding: 4px;
+            border-radius: 999px;
+        }
+        .seg-btn {
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--muted);
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .seg-btn.active {
+            background: var(--toggle-active-bg);
+            color: var(--text);
+            border-color: var(--border);
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+        }
+        .period-nav {
+            display: inline-flex;
+            gap: 6px;
+        }
+        .nav-btn {
+            border: 1px solid var(--border);
+            background: var(--action-bg);
+            color: var(--action-text);
+            padding: 6px 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 12px;
+        }
         .btn-row {
             display: flex;
             gap: 8px;
@@ -231,17 +275,23 @@
             <label>结束日期</label>
             <input type="date" name="endDate" th:value="${endDate}">
         </div>
-        <div>
+        <div class="period-control">
             <label>周期</label>
-            <select name="period" id="periodSelect">
-                <option value="day" th:selected="${period == 'day' || period == null}">按天</option>
-                <option value="week" th:selected="${period == 'week'}">按周</option>
-                <option value="month" th:selected="${period == 'month'}">按月</option>
-                <option value="year" th:selected="${period == 'year'}">按年</option>
-            </select>
+            <div class="period-row">
+                <div class="segmented" id="periodButtons">
+                    <button type="button" class="seg-btn" data-period="day">日</button>
+                    <button type="button" class="seg-btn" data-period="week">周</button>
+                    <button type="button" class="seg-btn" data-period="month">月</button>
+                    <button type="button" class="seg-btn" data-period="year">年</button>
+                </div>
+                <div class="period-nav" id="periodNav">
+                    <button type="button" class="nav-btn" data-shift="-1">&lt;</button>
+                    <button type="button" class="nav-btn" data-shift="1">&gt;</button>
+                </div>
+            </div>
+            <input type="hidden" name="period" id="periodInput" th:value="${period}">
         </div>
         <div class="btn-row">
-            <button class="btn btn-primary" type="submit">筛选</button>
             <a class="btn btn-light" th:href="@{/transactions}">重置</a>
         </div>
         <div class="btn-row">
@@ -349,11 +399,17 @@
         const summaryBaseUrl = /*[[@{/transactions/stats/summary}]]*/ "/transactions/stats/summary";
         const params = new URLSearchParams(window.location.search);
         const query = new URLSearchParams();
-        ["type", "startDate", "endDate", "period"].forEach(function (k) {
+        ["type", "startDate", "endDate", "period", "chartPeriod"].forEach(function (k) {
             const v = params.get(k);
             if (v) query.set(k, v);
         });
-        const initialPeriod = params.get("period") || "day";
+        const periodInput = document.getElementById("periodInput");
+        const startInput = document.querySelector("input[name='startDate']");
+        const endInput = document.querySelector("input[name='endDate']");
+        const typeSelect = document.querySelector("select[name='type']");
+        const filterForm = document.querySelector("form.filters");
+        const initialPeriod = params.get("chartPeriod") || "day";
+        const filterPeriod = (periodInput && periodInput.value) || "month";
         const periodLabels = {
             day: "按天金额趋势",
             week: "按周金额趋势",
@@ -362,7 +418,8 @@
         };
         const periodTitle = document.getElementById("periodTitle");
         const periodToggle = document.getElementById("periodToggle");
-        const periodSelect = document.getElementById("periodSelect");
+        const periodButtons = document.getElementById("periodButtons");
+        const periodNav = document.getElementById("periodNav");
 
         function buildUrl(period) {
             const nextQuery = new URLSearchParams();
@@ -374,16 +431,107 @@
             return summaryBaseUrl + "?" + nextQuery.toString();
         }
 
-        function updatePeriodUi(period) {
+        function updateFilterUi(period) {
+            const title = periodLabels[period] || periodLabels.day;
+            if (periodInput) periodInput.value = period;
+            if (periodButtons) {
+                const buttons = periodButtons.querySelectorAll(".seg-btn");
+                buttons.forEach(function (btn) {
+                    btn.classList.toggle("active", btn.getAttribute("data-period") === period);
+                });
+            }
+        }
+
+        function updateChartUi(period) {
             const title = periodLabels[period] || periodLabels.day;
             if (periodTitle) periodTitle.textContent = title;
-            if (periodSelect) periodSelect.value = period;
             if (periodToggle) {
                 const buttons = periodToggle.querySelectorAll(".toggle-btn");
                 buttons.forEach(function (btn) {
                     btn.classList.toggle("active", btn.getAttribute("data-period") === period);
                 });
             }
+        }
+
+        function pad2(num) {
+            return String(num).padStart(2, "0");
+        }
+
+        function formatDate(date) {
+            return date.getFullYear() + "-" + pad2(date.getMonth() + 1) + "-" + pad2(date.getDate());
+        }
+
+        function parseDate(value) {
+            if (!value) return null;
+            const parsed = new Date(value + "T00:00:00");
+            return Number.isNaN(parsed.getTime()) ? null : parsed;
+        }
+
+        function addDays(date, days) {
+            const next = new Date(date);
+            next.setDate(next.getDate() + days);
+            return next;
+        }
+
+        function startOfWeek(date) {
+            const next = new Date(date);
+            const day = next.getDay();
+            const diff = (day + 6) % 7;
+            next.setDate(next.getDate() - diff);
+            return next;
+        }
+
+        function rangeForPeriod(period, anchor) {
+            const base = anchor ? new Date(anchor) : new Date();
+            if (period === "week") {
+                const start = startOfWeek(base);
+                return { start: start, end: addDays(start, 6) };
+            }
+            if (period === "month") {
+                const start = new Date(base.getFullYear(), base.getMonth(), 1);
+                const end = new Date(base.getFullYear(), base.getMonth() + 1, 0);
+                return { start: start, end: end };
+            }
+            if (period === "year") {
+                const start = new Date(base.getFullYear(), 0, 1);
+                const end = new Date(base.getFullYear(), 11, 31);
+                return { start: start, end: end };
+            }
+            return { start: base, end: base };
+        }
+
+        function applyRange(period, anchor) {
+            const range = rangeForPeriod(period, anchor);
+            if (startInput) startInput.value = formatDate(range.start);
+            if (endInput) endInput.value = formatDate(range.end);
+        }
+
+        function submitFilters() {
+            if (!filterForm) return;
+            if (periodInput && !periodInput.value) {
+                periodInput.value = filterPeriod || "month";
+            }
+            filterForm.submit();
+        }
+
+        function currentPeriod() {
+            return (periodInput && periodInput.value) || "month";
+        }
+
+        function shiftRange(period, start, end, direction) {
+            if (period === "week") {
+                return { start: addDays(start, 7 * direction), end: addDays(end, 7 * direction) };
+            }
+            if (period === "month") {
+                const nextStart = new Date(start.getFullYear(), start.getMonth() + direction, 1);
+                const nextEnd = new Date(nextStart.getFullYear(), nextStart.getMonth() + 1, 0);
+                return { start: nextStart, end: nextEnd };
+            }
+            if (period === "year") {
+                const year = start.getFullYear() + direction;
+                return { start: new Date(year, 0, 1), end: new Date(year, 11, 31) };
+            }
+            return { start: addDays(start, direction), end: addDays(end, direction) };
         }
 
         function setStatus(status, msg) {
@@ -407,7 +555,7 @@
         }
 
         function render(payload, period) {
-            updatePeriodUi(period);
+            updateChartUi(period);
             const income = Number(payload.totalIncome || 0);
             const expense = Number(payload.totalExpense || 0);
             const net = income - expense;
@@ -565,6 +713,68 @@
                 });
         }
 
+        updateFilterUi(filterPeriod);
+
+        if (startInput && endInput) {
+            if (!startInput.value || !endInput.value) {
+                applyRange(filterPeriod, new Date());
+            }
+        }
+
+        if (periodButtons) {
+            periodButtons.addEventListener("click", function (event) {
+                const target = event.target;
+                if (!target || !target.classList.contains("seg-btn")) return;
+                const period = target.getAttribute("data-period") || "day";
+                updateFilterUi(period);
+                const anchor = parseDate(startInput && startInput.value)
+                    || parseDate(endInput && endInput.value)
+                    || new Date();
+                applyRange(period, anchor);
+                submitFilters();
+            });
+        }
+
+        if (periodNav) {
+            periodNav.addEventListener("click", function (event) {
+                const target = event.target;
+                if (!target || !target.classList.contains("nav-btn")) return;
+                const direction = Number(target.getAttribute("data-shift") || 0);
+                if (!direction) return;
+                const period = currentPeriod();
+                let start = parseDate(startInput && startInput.value);
+                let end = parseDate(endInput && endInput.value);
+                if (!start || !end) {
+                    applyRange(period, new Date());
+                    start = parseDate(startInput && startInput.value);
+                    end = parseDate(endInput && endInput.value);
+                }
+                if (!start || !end) return;
+                const shifted = shiftRange(period, start, end, direction);
+                if (startInput) startInput.value = formatDate(shifted.start);
+                if (endInput) endInput.value = formatDate(shifted.end);
+                submitFilters();
+            });
+        }
+
+        if (typeSelect) {
+            typeSelect.addEventListener("change", function () {
+                submitFilters();
+            });
+        }
+
+        if (startInput) {
+            startInput.addEventListener("change", function () {
+                submitFilters();
+            });
+        }
+
+        if (endInput) {
+            endInput.addEventListener("change", function () {
+                submitFilters();
+            });
+        }
+
         if (!window.echarts) {
             setStatus("失败", "ECharts CDN 加载失败，请检查网络连接。");
             return;
@@ -575,7 +785,7 @@
                 const target = event.target;
                 if (!target || !target.classList.contains("toggle-btn")) return;
                 const period = target.getAttribute("data-period") || "day";
-                params.set("period", period);
+                params.set("chartPeriod", period);
                 const queryString = params.toString();
                 const nextUrl = queryString ? window.location.pathname + "?" + queryString : window.location.pathname;
                 window.history.replaceState(null, "", nextUrl);

@@ -17,8 +17,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -26,7 +28,6 @@ import java.util.stream.Collectors;
 @Controller
 @RequestMapping("/transactions")
 public class TransactionController {
-
     private final TransactionService transactionService;
     private final CategoryMapper categoryMapper;
 
@@ -90,10 +91,10 @@ public class TransactionController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(required = false) String period,
             Model model) {
-        LocalDate[] range = resolveDateRange(startDate, endDate);
+        String normalizedPeriod = transactionService.normalizePeriod(normalizePeriodDefault(period));
+        LocalDate[] range = resolveDateRange(startDate, endDate, normalizedPeriod);
         startDate = range[0];
         endDate = range[1];
-        String normalizedPeriod = transactionService.normalizePeriod(period);
         model.addAttribute("type", type);
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
@@ -122,8 +123,9 @@ public class TransactionController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(required = false) String period) {
-        LocalDate[] range = resolveDateRange(startDate, endDate);
-        return transactionService.buildSummary(type, range[0], range[1], period);
+        String normalizedPeriod = transactionService.normalizePeriod(normalizePeriodDefault(period));
+        LocalDate[] range = resolveDateRange(startDate, endDate, normalizedPeriod);
+        return transactionService.buildSummary(type, range[0], range[1], normalizedPeriod);
     }
 
     private LedgerTransaction defaultTransaction() {
@@ -181,11 +183,38 @@ public class TransactionController {
         }
     }
 
-    private LocalDate[] resolveDateRange(LocalDate startDate, LocalDate endDate) {
+    private String normalizePeriodDefault(String period) {
+        return (period == null || period.isBlank()) ? "month" : period;
+    }
+
+    private LocalDate[] resolveDateRange(LocalDate startDate, LocalDate endDate, String period) {
         if (startDate == null && endDate == null) {
-            YearMonth current = YearMonth.now();
-            return new LocalDate[]{current.atDay(1), current.atEndOfMonth()};
+            return currentRange(period, LocalDate.now());
+        }
+        if (startDate == null || endDate == null) {
+            LocalDate anchor = startDate != null ? startDate : endDate;
+            return currentRange(period, anchor);
         }
         return new LocalDate[]{startDate, endDate};
+    }
+
+    private LocalDate[] currentRange(String period, LocalDate anchor) {
+        if (anchor == null) {
+            anchor = LocalDate.now();
+        }
+        switch (period) {
+            case "week":
+                LocalDate weekStart = anchor.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+                return new LocalDate[]{weekStart, weekStart.plusDays(6)};
+            case "year":
+                LocalDate yearStart = LocalDate.of(anchor.getYear(), 1, 1);
+                return new LocalDate[]{yearStart, LocalDate.of(anchor.getYear(), 12, 31)};
+            case "month":
+                YearMonth month = YearMonth.from(anchor);
+                return new LocalDate[]{month.atDay(1), month.atEndOfMonth()};
+            case "day":
+            default:
+                return new LocalDate[]{anchor, anchor};
+        }
     }
 }

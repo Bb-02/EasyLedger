@@ -21,9 +21,11 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.temporal.TemporalAdjusters;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.math.BigDecimal;
 
 @Controller
 @RequestMapping("/transactions")
@@ -109,7 +111,9 @@ public class TransactionController {
         String normalizedPeriod = transactionService.normalizePeriod(period);
         List<LedgerTransaction> transactions = transactionService.findAll();
         Map<String, List<LedgerTransaction>> grouped = transactionService.groupByPeriod(transactions, normalizedPeriod);
+        Map<String, PeriodSubtotal> subtotals = buildGroupSubtotals(grouped);
         model.addAttribute("groupedTransactions", grouped);
+        model.addAttribute("groupSubtotals", subtotals);
         model.addAttribute("categoryNameMap", buildCategoryNameMap());
         model.addAttribute("period", normalizedPeriod);
         model.addAttribute("periodLabel", periodLabel(normalizedPeriod));
@@ -143,6 +147,47 @@ public class TransactionController {
 
     private Map<Long, String> buildCategoryNameMap() {
         return loadCategories().stream().collect(Collectors.toMap(Category::getId, Category::getName));
+    }
+
+    private Map<String, PeriodSubtotal> buildGroupSubtotals(Map<String, List<LedgerTransaction>> grouped) {
+        Map<String, PeriodSubtotal> subtotals = new LinkedHashMap<>();
+        if (grouped == null) {
+            return subtotals;
+        }
+        for (Map.Entry<String, List<LedgerTransaction>> entry : grouped.entrySet()) {
+            BigDecimal income = BigDecimal.ZERO;
+            BigDecimal expense = BigDecimal.ZERO;
+            for (LedgerTransaction transaction : entry.getValue()) {
+                if (transaction == null || transaction.getAmount() == null) {
+                    continue;
+                }
+                if ("INCOME".equalsIgnoreCase(transaction.getType())) {
+                    income = income.add(transaction.getAmount());
+                } else if ("EXPENSE".equalsIgnoreCase(transaction.getType())) {
+                    expense = expense.add(transaction.getAmount());
+                }
+            }
+            subtotals.put(entry.getKey(), new PeriodSubtotal(income, expense));
+        }
+        return subtotals;
+    }
+
+    private static class PeriodSubtotal {
+        private final BigDecimal income;
+        private final BigDecimal expense;
+
+        private PeriodSubtotal(BigDecimal income, BigDecimal expense) {
+            this.income = income;
+            this.expense = expense;
+        }
+
+        public BigDecimal getIncome() {
+            return income;
+        }
+
+        public BigDecimal getExpense() {
+            return expense;
+        }
     }
 
     private boolean isValid(LedgerTransaction transaction) {

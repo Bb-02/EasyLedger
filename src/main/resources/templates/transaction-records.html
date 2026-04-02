@@ -107,8 +107,28 @@
             margin-bottom: 14px;
         }
         .date-title {
-            margin: 0 0 10px;
+            margin: 0;
             font-size: 16px;
+            font-weight: 600;
+        }
+        .date-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .subtotal {
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .subtotal .income {
+            color: var(--success);
+            font-weight: 600;
+        }
+        .subtotal .expense {
+            color: var(--danger);
             font-weight: 600;
         }
         table {
@@ -144,13 +164,12 @@
         </div>
         <div class="actions">
             <form th:action="@{/transactions/records}" method="get">
-                <select name="period">
+                <select name="period" onchange="this.form.submit()">
                     <option value="day" th:selected="${period == 'day' || period == null}">按天</option>
                     <option value="week" th:selected="${period == 'week'}">按周</option>
                     <option value="month" th:selected="${period == 'month'}">按月</option>
                     <option value="year" th:selected="${period == 'year'}">按年</option>
                 </select>
-                <button type="submit">切换</button>
             </form>
             <a class="action-link" th:href="@{/settings}">设置</a>
             <a class="action-link" th:href="@{/transactions}">返回仪表盘</a>
@@ -162,7 +181,15 @@
     </div>
 
     <div class="card" th:each="entry : ${groupedTransactions}">
-        <h3 class="date-title" th:text="${entry.key}">2026-03-13</h3>
+        <div class="date-header">
+            <h3 class="date-title" th:text="${entry.key}">2026-03-13</h3>
+            <div class="subtotal" th:with="summary=${groupSubtotals[entry.key]}">
+                小计：
+                <span class="income" th:text="'收入 ' + ${summary != null ? summary.income : 0}">收入 0.00</span>
+                <span> | </span>
+                <span class="expense" th:text="'支出 ' + ${summary != null ? summary.expense : 0}">支出 0.00</span>
+            </div>
+        </div>
         <table>
             <thead>
             <tr>

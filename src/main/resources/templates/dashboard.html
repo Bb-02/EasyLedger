@@ -184,7 +184,10 @@
             gap: 12px;
             margin-bottom: 16px;
         }
-        .chart-box { padding: 12px; }
+        .chart-box {
+            padding: 12px;
+            position: relative;
+        }
         .chart-title { margin: 0 0 8px; font-size: 15px; }
         .chart { width: 100%; height: 340px; }
         .chart-header {
@@ -234,6 +237,35 @@
             white-space: nowrap;
         }
         th { background: var(--table-head-bg); }
+
+        .chart-empty {
+            position: absolute;
+            inset: 64px 16px 16px;
+            border: none;
+            border-radius: 0;
+            background: transparent;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            text-align: center;
+            color: var(--muted);
+            padding: 0 12px;
+        }
+        .chart-empty[hidden] { display: none; }
+        .chart-empty svg {
+            width: 140px;
+            height: 105px;
+        }
+        .chart-empty .empty-title {
+            font-size: 14px;
+            color: var(--text);
+            font-weight: 600;
+        }
+        .chart-empty .empty-sub {
+            font-size: 12px;
+        }
 
         @media (max-width: 960px) {
             .filters { grid-template-columns: 1fr 1fr; }
@@ -293,8 +325,6 @@
         </div>
         <div class="btn-row">
             <a class="btn btn-light" th:href="@{/transactions}">重置</a>
-        </div>
-        <div class="btn-row">
             <a class="btn btn-light" th:href="@{/transactions/new}">去新增一笔</a>
         </div>
     </form>
@@ -326,6 +356,23 @@
                 </div>
             </div>
             <div id="dailyBarChart" class="chart"></div>
+            <div class="chart-empty" id="emptyState1" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="emptyGrad" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0" stop-color="#c7d2fe"/>
+                            <stop offset="1" stop-color="#bae6fd"/>
+                        </linearGradient>
+                    </defs>
+                    <rect x="16" y="16" width="208" height="128" rx="18" fill="url(#emptyGrad)" opacity="0.25"/>
+                    <rect x="36" y="44" width="120" height="72" rx="12" fill="#ffffff" opacity="0.8"/>
+                    <path d="M46 62h100M46 82h76M46 102h56" stroke="#94a3b8" stroke-width="6" stroke-linecap="round"/>
+                    <circle cx="186" cy="62" r="18" fill="#e0f2fe" stroke="#7dd3fc" stroke-width="4"/>
+                    <path d="M174 62h24M186 50v24" stroke="#38bdf8" stroke-width="4" stroke-linecap="round"/>
+                </svg>
+                <div class="empty-title">当前日期范围暂无数据</div>
+                <div class="empty-sub">请调整筛选条件或新增记账</div>
+            </div>
         </div>
         <div class="card chart-box">
             <div class="chart-header">
@@ -336,6 +383,24 @@
                 </div>
             </div>
             <div id="categoryPieChart" class="chart"></div>
+            <div class="chart-empty" id="emptyState2" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="emptyGradPie" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0" stop-color="#c7d2fe"/>
+                            <stop offset="1" stop-color="#bae6fd"/>
+                        </linearGradient>
+                    </defs>
+                    <rect x="16" y="16" width="208" height="128" rx="18" fill="url(#emptyGradPie)" opacity="0.25"/>
+                    <circle cx="90" cy="88" r="36" fill="#ffffff" opacity="0.85"/>
+                    <path d="M90 52a36 36 0 0 1 34 24l-34 12z" fill="#bfdbfe"/>
+                    <rect x="140" y="64" width="60" height="12" rx="6" fill="#e2e8f0"/>
+                    <rect x="140" y="86" width="48" height="12" rx="6" fill="#e2e8f0"/>
+                    <rect x="140" y="108" width="36" height="12" rx="6" fill="#e2e8f0"/>
+                </svg>
+                <div class="empty-title">当前日期范围暂无数据</div>
+                <div class="empty-sub">请调整筛选条件或新增记账</div>
+            </div>
         </div>
     </div>
 
@@ -420,6 +485,13 @@
         const periodToggle = document.getElementById("periodToggle");
         const periodButtons = document.getElementById("periodButtons");
         const periodNav = document.getElementById("periodNav");
+        const emptyStateBar = document.getElementById("emptyState1");
+        const emptyStatePie = document.getElementById("emptyState2");
+
+        function toggleEmptyState(el, show) {
+            if (!el) return;
+            el.hidden = !show;
+        }
 
         function buildUrl(period) {
             const nextQuery = new URLSearchParams();
@@ -602,6 +674,11 @@
             const limitedLabels = recentBuckets.map(function (b) { return b.label; });
             const incomeSeries = recentBuckets.map(function (b) { return b.income; });
             const expenseSeries = recentBuckets.map(function (b) { return b.expense; });
+            const hasPeriodData = recentBuckets.some(function (b) {
+                return (b.income || 0) > 0 || (b.expense || 0) > 0;
+            });
+
+            toggleEmptyState(emptyStateBar, !hasPeriodData);
 
             const categoryIncome = payload.categoryTotalsIncome || [];
             const categoryExpense = payload.categoryTotalsExpense || [];
@@ -655,6 +732,14 @@
 
             function renderPie(type) {
                 const data = buildPieData(type);
+                const hasPieData = data.some(function (item) {
+                    return Number(item.value || 0) > 0;
+                });
+                toggleEmptyState(emptyStatePie, !hasPieData);
+                if (!hasPieData) {
+                    pieChart.clear();
+                    return;
+                }
                 pieChart.setOption({
                     tooltip: { trigger: "item" },
                     legend: { bottom: 0, textStyle: { color: colors.muted } },

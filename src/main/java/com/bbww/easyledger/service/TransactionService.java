@@ -92,6 +92,17 @@ public class TransactionService {
         return transactionMapper.selectList(query);
     }
 
+    public List<LedgerTransaction> findByFilters(String keyword, String type, Long categoryId) {
+        String trimmed = keyword == null ? null : keyword.trim();
+        LambdaQueryWrapper<LedgerTransaction> query = new LambdaQueryWrapper<>();
+        query.like(trimmed != null && !trimmed.isEmpty(), LedgerTransaction::getNote, trimmed)
+                .eq(type != null && !type.isBlank(), LedgerTransaction::getType, type)
+                .eq(categoryId != null, LedgerTransaction::getCategoryId, categoryId)
+                .orderByDesc(LedgerTransaction::getTxnDate)
+                .orderByDesc(LedgerTransaction::getId);
+        return transactionMapper.selectList(query);
+    }
+
     public List<LedgerTransaction> findByFilter(String type, LocalDate startDate, LocalDate endDate) {
         LambdaQueryWrapper<LedgerTransaction> query = new LambdaQueryWrapper<>();
         query.eq(type != null && !type.isBlank(), LedgerTransaction::getType, type)

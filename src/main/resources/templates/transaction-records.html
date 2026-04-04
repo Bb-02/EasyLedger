@@ -79,6 +79,7 @@
             display: inline-flex;
             gap: 6px;
             align-items: center;
+            flex-wrap: wrap;
         }
         .actions select {
             padding: 8px 10px;
@@ -179,6 +180,15 @@
                     <option value="month" th:selected="${period == 'month'}">按月</option>
                     <option value="year" th:selected="${period == 'year'}">按年</option>
                 </select>
+                <select name="type" onchange="this.form.submit()">
+                    <option value="" th:selected="${type == null || type == ''}">全部类型</option>
+                    <option value="INCOME" th:selected="${type == 'INCOME'}">收入</option>
+                    <option value="EXPENSE" th:selected="${type == 'EXPENSE'}">支出</option>
+                </select>
+                <select name="categoryId" onchange="this.form.submit()">
+                    <option value="" th:selected="${categoryId == null}">全部分类</option>
+                    <option th:each="c : ${categories}" th:value="${c.id}" th:selected="${categoryId == c.id}" th:text="${c.name}">餐饮</option>
+                </select>
                 <input type="search" name="keyword" placeholder="搜索备注" th:value="${keyword}">
                 <button type="submit">搜索</button>
             </form>
@@ -228,6 +238,7 @@
         </table>
     </div>
 </div>
+
 </body>
 </html>
 

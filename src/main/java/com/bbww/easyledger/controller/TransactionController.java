@@ -109,9 +109,24 @@ public class TransactionController {
     @GetMapping("/records")
     public String records(@RequestParam(required = false) String period,
                           @RequestParam(required = false) String keyword,
+                          @RequestParam(required = false) String type,
+                          @RequestParam(required = false) Long categoryId,
                           Model model) {
         String normalizedPeriod = transactionService.normalizePeriod(period);
-        List<LedgerTransaction> transactions = transactionService.findByKeyword(keyword);
+        List<Category> categories = loadCategories(type);
+        if (categoryId != null) {
+            boolean found = false;
+            for (Category category : categories) {
+                if (categoryId.equals(category.getId())) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                categoryId = null;
+            }
+        }
+        List<LedgerTransaction> transactions = transactionService.findByFilters(keyword, type, categoryId);
         Map<String, List<LedgerTransaction>> grouped = transactionService.groupByPeriod(transactions, normalizedPeriod);
         Map<String, PeriodSubtotal> subtotals = buildGroupSubtotals(grouped);
         model.addAttribute("groupedTransactions", grouped);
@@ -120,6 +135,9 @@ public class TransactionController {
         model.addAttribute("period", normalizedPeriod);
         model.addAttribute("periodLabel", periodLabel(normalizedPeriod));
         model.addAttribute("keyword", keyword);
+        model.addAttribute("type", type);
+        model.addAttribute("categoryId", categoryId);
+        model.addAttribute("categories", categories);
         return "transaction-records";
     }
 
@@ -145,6 +163,15 @@ public class TransactionController {
     private List<Category> loadCategories() {
         LambdaQueryWrapper<Category> query = new LambdaQueryWrapper<>();
         query.eq(Category::getEnabled, true).orderByAsc(Category::getType).orderByAsc(Category::getSort);
+        return categoryMapper.selectList(query);
+    }
+
+    private List<Category> loadCategories(String type) {
+        LambdaQueryWrapper<Category> query = new LambdaQueryWrapper<>();
+        query.eq(Category::getEnabled, true)
+                .eq(type != null && !type.isBlank(), Category::getType, type)
+                .orderByAsc(Category::getType)
+                .orderByAsc(Category::getSort);
         return categoryMapper.selectList(query);
     }
 

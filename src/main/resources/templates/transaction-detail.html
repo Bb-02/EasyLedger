@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>流水详情 - EasyLedger</title>
+    <link rel="stylesheet" th:href="@{/css/theme.css}" href="/css/theme.css">
+    <link rel="icon" type="image/png" th:href="@{/images/EasyLedger.png}" href="/images/EasyLedger.png">
+    <script>
+        (function () {
+            var theme = localStorage.getItem("easyledger-theme");
+            if (theme === "dark") {
+                document.documentElement.setAttribute("data-theme", "dark");
+            } else {
+                document.documentElement.removeAttribute("data-theme");
+            }
+        })();
+    </script>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            color: var(--text);
+            background: var(--bg);
+        }
+        .container {
+            max-width: 900px;
+            margin: 24px auto;
+            padding: 0 16px 24px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .app-logo {
+            width: 45px;
+            height: 45px;
+            border-radius: 10px;
+            object-fit: cover;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+        }
+        .title {
+            margin: 0;
+            font-size: 26px;
+            font-weight: 700;
+        }
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .actions .action-link {
+            text-decoration: none;
+            background: var(--action-bg);
+            color: var(--action-text);
+            padding: 9px 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            display: inline-block;
+            border: 1px solid var(--action-border);
+        }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 16px;
+        }
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 140px 1fr;
+            row-gap: 12px;
+            column-gap: 12px;
+        }
+        .label {
+            color: var(--muted);
+            font-size: 13px;
+        }
+        .value {
+            font-size: 14px;
+            word-break: break-word;
+        }
+        .value.expense {
+            color: var(--danger);
+            font-weight: 600;
+        }
+        .value.income {
+            color: var(--success);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div class="title-wrap">
+            <img class="app-logo" th:src="@{/images/EasyLedger.png}" src="/images/EasyLedger.png" alt="EasyLedger">
+            <h1 class="title">流水详情</h1>
+        </div>
+        <div class="actions">
+            <a class="action-link" th:href="@{/transactions/records}">返回记账统计</a>
+            <a class="action-link" th:href="@{'/transactions/' + ${transaction.id} + '/edit'}">编辑</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="detail-grid">
+            <div class="label">类型</div>
+            <div class="value" th:text="${transaction.type == 'INCOME' ? '收入' : '支出'}">支出</div>
+
+            <div class="label">分类</div>
+            <div class="value" th:text="${categoryNameMap[transaction.categoryId] ?: '未分类'}">餐饮</div>
+
+            <div class="label">金额</div>
+            <div class="value" th:classappend="${transaction.type == 'EXPENSE' ? 'expense' : 'income'}" th:text="${transaction.amount}">0.00</div>
+
+            <div class="label">日期</div>
+            <div class="value" th:text="${transaction.txnDate}">2026-04-04</div>
+
+            <div class="label">备注</div>
+            <div class="value" th:text="${transaction.note}">-</div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+

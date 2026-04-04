@@ -145,6 +145,7 @@
             width: 100%;
             border-collapse: collapse;
             background: var(--table-bg);
+            table-layout: fixed;
         }
         th, td {
             border-bottom: 1px solid var(--border);
@@ -152,6 +153,14 @@
             text-align: left;
             font-size: 14px;
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        th.note-col, td.note-col {
+            white-space: nowrap;
+        }
+        th.action-col, td.action-col {
+            text-align: left;
         }
         th { background: var(--table-head-bg); }
         .expense { color: var(--danger); }
@@ -212,13 +221,20 @@
             </div>
         </div>
         <table>
+            <colgroup>
+                <col style="width: 80px;">
+                <col style="width: 120px;">
+                <col style="width: 190px;">
+                <col>
+                <col style="width: 220px;">
+            </colgroup>
             <thead>
             <tr>
                 <th>类型</th>
                 <th>分类</th>
                 <th>金额</th>
-                <th>备注</th>
-                <th>操作</th>
+                <th class="note-col">备注</th>
+                <th class="action-col">操作</th>
             </tr>
             </thead>
             <tbody>
@@ -226,8 +242,9 @@
                 <td th:text="${t.type == 'INCOME' ? '收入' : '支出'}">支出</td>
                 <td th:text="${categoryNameMap[t.categoryId] ?: '未分类'}">餐饮</td>
                 <td th:text="${t.amount}" th:classappend="${t.type == 'EXPENSE' ? 'expense' : ''}">0.00</td>
-                <td th:text="${t.note}">-</td>
-                <td>
+                <td class="note-col" th:text="${t.note}">-</td>
+                <td class="action-col">
+                    <a class="btn-chip btn-chip--edit" th:href="@{'/transactions/' + ${t.id}}">查看</a>
                     <a class="btn-chip btn-chip--edit" th:href="@{'/transactions/' + ${t.id} + '/edit'}">编辑</a>
                     <form th:action="@{'/transactions/' + ${t.id} + '/delete'}" method="post" style="display:inline; margin-left: 8px;">
                         <button type="submit" class="btn-chip btn-chip--delete" onclick="return confirm('确认删除这条记录吗？');">删除</button>

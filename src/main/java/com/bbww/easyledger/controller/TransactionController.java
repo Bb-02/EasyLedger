@@ -55,6 +55,17 @@ public class TransactionController {
         return "redirect:/transactions";
     }
 
+    @GetMapping("/{id}")
+    public String detail(@PathVariable("id") Long id, Model model) {
+        LedgerTransaction transaction = transactionService.findById(id);
+        if (transaction == null) {
+            return "redirect:/transactions/records";
+        }
+        model.addAttribute("transaction", transaction);
+        model.addAttribute("categoryNameMap", buildCategoryNameMap());
+        return "transaction-detail";
+    }
+
     @GetMapping("/{id}/edit")
     public String edit(@PathVariable("id") Long id, Model model) {
         LedgerTransaction transaction = transactionService.findById(id);

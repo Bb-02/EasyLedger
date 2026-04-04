@@ -80,6 +80,18 @@ public class TransactionService {
         return transactionMapper.selectList(query);
     }
 
+    public List<LedgerTransaction> findByKeyword(String keyword) {
+        String trimmed = keyword == null ? null : keyword.trim();
+        if (trimmed == null || trimmed.isEmpty()) {
+            return findAll();
+        }
+        LambdaQueryWrapper<LedgerTransaction> query = new LambdaQueryWrapper<>();
+        query.like(LedgerTransaction::getNote, trimmed)
+                .orderByDesc(LedgerTransaction::getTxnDate)
+                .orderByDesc(LedgerTransaction::getId);
+        return transactionMapper.selectList(query);
+    }
+
     public List<LedgerTransaction> findByFilter(String type, LocalDate startDate, LocalDate endDate) {
         LambdaQueryWrapper<LedgerTransaction> query = new LambdaQueryWrapper<>();
         query.eq(type != null && !type.isBlank(), LedgerTransaction::getType, type)

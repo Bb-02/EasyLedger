@@ -88,6 +88,15 @@
             color: var(--text);
             font-size: 13px;
         }
+        .actions input {
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--input-bg);
+            color: var(--text);
+            font-size: 13px;
+            min-width: 160px;
+        }
         .actions button {
             border: none;
             background: var(--action-bg);
@@ -170,6 +179,8 @@
                     <option value="month" th:selected="${period == 'month'}">按月</option>
                     <option value="year" th:selected="${period == 'year'}">按年</option>
                 </select>
+                <input type="search" name="keyword" placeholder="搜索备注" th:value="${keyword}">
+                <button type="submit">搜索</button>
             </form>
             <a class="action-link" th:href="@{/settings}">设置</a>
             <a class="action-link" th:href="@{/transactions}">返回仪表盘</a>

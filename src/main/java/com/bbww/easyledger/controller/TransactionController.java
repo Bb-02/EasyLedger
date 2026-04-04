@@ -107,9 +107,11 @@ public class TransactionController {
     }
 
     @GetMapping("/records")
-    public String records(@RequestParam(required = false) String period, Model model) {
+    public String records(@RequestParam(required = false) String period,
+                          @RequestParam(required = false) String keyword,
+                          Model model) {
         String normalizedPeriod = transactionService.normalizePeriod(period);
-        List<LedgerTransaction> transactions = transactionService.findAll();
+        List<LedgerTransaction> transactions = transactionService.findByKeyword(keyword);
         Map<String, List<LedgerTransaction>> grouped = transactionService.groupByPeriod(transactions, normalizedPeriod);
         Map<String, PeriodSubtotal> subtotals = buildGroupSubtotals(grouped);
         model.addAttribute("groupedTransactions", grouped);
@@ -117,6 +119,7 @@ public class TransactionController {
         model.addAttribute("categoryNameMap", buildCategoryNameMap());
         model.addAttribute("period", normalizedPeriod);
         model.addAttribute("periodLabel", periodLabel(normalizedPeriod));
+        model.addAttribute("keyword", keyword);
         return "transaction-records";
     }
 

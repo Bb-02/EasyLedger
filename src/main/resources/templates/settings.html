@@ -77,78 +77,115 @@
             background: var(--card);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            padding: 16px;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+            padding: 18px;
             margin-bottom: 14px;
         }
         .section-title {
-            margin: 0 0 10px;
-            font-size: 15px;
-            font-weight: 600;
+            margin: 0 0 12px;
+            font-size: 16px;
+            font-weight: 650;
+            letter-spacing: 0.2px;
         }
         .setting-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 12px;
-            padding: 10px 0;
+            padding: 14px 12px;
             border-bottom: 1px solid var(--border);
+            border-radius: 12px;
+            transition: background 0.2s ease, transform 0.2s ease;
         }
-        .setting-row.is-toggle {
-            cursor: pointer;
+        .setting-row:hover {
+            background: rgba(148, 163, 184, 0.12);
+            transform: translateY(-1px);
+        }
+        .expand-panel {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            padding: 0 10px;
+            transition: max-height 0.2s ease, opacity 0.2s ease, padding 0.2s ease;
+        }
+        .expand-panel.is-open {
+            max-height: 160px;
+            opacity: 1;
+            padding: 6px 10px 4px;
+        }
+        .setting-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .setting-name {
+            font-size: 15px;
+            font-weight: 650;
+        }
+        .setting-desc {
+            color: var(--muted);
+            font-size: 13px;
         }
         .setting-action {
-            padding: 4px 10px;
+            padding: 6px 12px;
             border-radius: 999px;
             background: var(--action-bg);
             color: var(--action-text);
             border: 1px solid var(--action-border);
             font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
-        .expand-panel {
-            display: none;
-            padding: 10px 0 4px;
+        .setting-action:hover {
+            background: rgba(148, 163, 184, 0.2);
         }
-        .expand-panel.is-open {
-            display: block;
+        .setting-action:focus-visible {
+            outline: 2px solid rgba(59, 130, 246, 0.45);
+            outline-offset: 2px;
+        }
+        .setting-action .chevron {
+            width: 8px;
+            height: 8px;
+            border-right: 2px solid currentColor;
+            border-bottom: 2px solid currentColor;
+            transform: rotate(45deg);
+            transition: transform 0.2s ease;
+        }
+        .setting-row.is-open .setting-action .chevron {
+            transform: rotate(-135deg);
+        }
+        .note {
+            color: var(--muted);
+            font-size: 13px;
+            margin: 0;
         }
         .theme-options {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             flex-wrap: wrap;
         }
         .theme-card {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px 10px;
+            gap: 6px;
+            padding: 6px 8px;
             border-radius: 10px;
             border: 1px solid var(--border);
             background: var(--card);
             cursor: pointer;
-            min-width: 180px;
+            min-width: 150px;
         }
         .theme-card input {
             margin-left: auto;
         }
         .theme-preview {
-            width: 24px;
-            height: 24px;
+            width: 22px;
+            height: 22px;
             border-radius: 6px;
             border: 1px solid var(--border);
-        }
-        .theme-preview.day {
-            background: #f8fafc;
-            border-color: #e5e7eb;
-        }
-        .theme-preview.dark {
-            background: #0d1117;
-            border-color: #30363d;
-        }
-        .note {
-            color: var(--muted);
-            font-size: 12px;
-            margin: 0;
         }
     </style>
 </head>
@@ -168,13 +205,16 @@
     </div>
 
     <div class="card">
-        <h2 class="section-title">功能开关（预留）</h2>
+        <h2 class="section-title">功能开关</h2>
         <div class="setting-row is-toggle" id="themeToggleRow" role="button" tabindex="0" aria-expanded="false" aria-controls="themePanel">
             <div class="setting-info">
                 <div class="setting-name">主题模式</div>
                 <div class="setting-desc">支持浅色/暗夜模式切换</div>
             </div>
-            <span class="setting-action" id="themeToggleAction">展开</span>
+            <button class="setting-action" id="themeToggleAction" type="button" aria-label="展开主题模式">
+                <span class="toggle-label">展开</span>
+                <span class="chevron" aria-hidden="true"></span>
+            </button>
         </div>
         <div class="expand-panel" id="themePanel">
             <div class="theme-options">
@@ -196,14 +236,12 @@
                 <div class="setting-name">仪表盘图表开关</div>
                 <div class="setting-desc">控制首页图表是否显示</div>
             </div>
-            <input type="checkbox" disabled>
-        </div>
-        <div class="setting-row">
-            <div class="setting-info">
-                <div class="setting-name">默认统计周期</div>
-                <div class="setting-desc">按天/周/月/年选择默认展示</div>
+            <div class="setting-control">
+                <label class="toggle-switch" for="chartToggle">
+                    <input type="checkbox" id="chartToggle" aria-label="仪表盘图表开关">
+                    <span class="toggle-slider"></span>
+                </label>
             </div>
-            <input type="checkbox" disabled>
         </div>
     </div>
 
@@ -216,12 +254,14 @@
 <script>
     (function () {
         var themeKey = "easyledger-theme";
+        var showChartsKey = "easyledger-show-charts";
         var doc = document.documentElement;
         var row = document.getElementById("themeToggleRow");
         var panel = document.getElementById("themePanel");
         var action = document.getElementById("themeToggleAction");
         var lightRadio = document.getElementById("themeLight");
         var darkRadio = document.getElementById("themeDark");
+        var chartToggle = document.getElementById("chartToggle");
 
         function applyTheme(next) {
             if (next === "dark") {
@@ -235,8 +275,12 @@
         function setPanel(open) {
             if (!panel || !row || !action) return;
             panel.classList.toggle("is-open", open);
+            row.classList.toggle("is-open", open);
             row.setAttribute("aria-expanded", open ? "true" : "false");
-            action.textContent = open ? "收起" : "展开";
+            var label = action.querySelector(".toggle-label");
+            if (label) {
+                label.textContent = open ? "收起" : "展开";
+            }
         }
 
         var storedTheme = localStorage.getItem(themeKey) || "light";
@@ -271,6 +315,22 @@
         if (darkRadio) {
             darkRadio.addEventListener("change", function () {
                 if (darkRadio.checked) applyTheme("dark");
+            });
+        }
+
+        function readShowCharts() {
+            var stored = localStorage.getItem(showChartsKey);
+            return stored === null ? true : stored === "true";
+        }
+
+        function writeShowCharts(value) {
+            localStorage.setItem(showChartsKey, value ? "true" : "false");
+        }
+
+        if (chartToggle) {
+            chartToggle.checked = readShowCharts();
+            chartToggle.addEventListener("change", function () {
+                writeShowCharts(chartToggle.checked);
             });
         }
     })();

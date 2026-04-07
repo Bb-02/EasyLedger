@@ -464,6 +464,7 @@
         const summaryBaseUrl = /*[[@{/transactions/stats/summary}]]*/ "/transactions/stats/summary";
         const params = new URLSearchParams(window.location.search);
         const query = new URLSearchParams();
+        const showChartsKey = "easyledger-show-charts";
         ["type", "startDate", "endDate", "period", "chartPeriod"].forEach(function (k) {
             const v = params.get(k);
             if (v) query.set(k, v);
@@ -474,7 +475,8 @@
         const typeSelect = document.querySelector("select[name='type']");
         const filterForm = document.querySelector("form.filters");
         const initialPeriod = params.get("chartPeriod") || "day";
-        const filterPeriod = (periodInput && periodInput.value) || "month";
+        const urlPeriod = params.get("period");
+        const filterPeriod = urlPeriod || (periodInput && periodInput.value) || "month";
         const periodLabels = {
             day: "按天金额趋势",
             week: "按周金额趋势",
@@ -487,6 +489,12 @@
         const periodNav = document.getElementById("periodNav");
         const emptyStateBar = document.getElementById("emptyState1");
         const emptyStatePie = document.getElementById("emptyState2");
+        const chartsSection = document.querySelector(".charts");
+
+        function shouldShowCharts() {
+            const stored = localStorage.getItem(showChartsKey);
+            return stored === null ? true : stored === "true";
+        }
 
         function toggleEmptyState(el, show) {
             if (!el) return;
@@ -800,6 +808,16 @@
 
         updateFilterUi(filterPeriod);
 
+        if (!urlPeriod && periodInput) {
+            periodInput.value = filterPeriod;
+        }
+
+        if (!urlPeriod) {
+            applyRange(filterPeriod, new Date());
+            submitFilters();
+            return;
+        }
+
         if (startInput && endInput) {
             if (!startInput.value || !endInput.value) {
                 applyRange(filterPeriod, new Date());
@@ -858,6 +876,12 @@
             endInput.addEventListener("change", function () {
                 submitFilters();
             });
+        }
+
+        if (!shouldShowCharts()) {
+            if (chartsSection) chartsSection.style.display = "none";
+            setStatus("已关闭", "仪表盘图表开关已关闭，统计接口未请求。");
+            return;
         }
 
         if (!window.echarts) {
